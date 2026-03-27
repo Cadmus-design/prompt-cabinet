@@ -5,524 +5,409 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>D&I Agent Dispatch Center</title>
   <style>
-    :root {
-      --bg: #0d1117;
-      --surface: #161b22;
-      --border: #30363d;
-      --text: #e6edf3;
-      --text-muted: #8b949e;
-      --green: #3fb950;
-      --blue: #58a6ff;
-      --yellow: #d29922;
-      --purple: #bc8cff;
-      --orange: #f0883e;
-      --red: #f85149;
-      --active-glow: rgba(63, 185, 80, 0.15);
-    }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      min-height: 100vh;
-      padding: 24px;
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 28px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .logo {
-      width: 10px; height: 10px;
-      background: var(--green);
-      border-radius: 50%;
-      box-shadow: 0 0 8px var(--green);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    header h1 { font-size: 14px; color: var(--text-muted); font-weight: 400; }
-    header h1 span { color: var(--green); }
-
-    .agents-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .agent-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .agent-card:hover { border-color: var(--blue); }
-
-    .agent-card.active {
-      border-color: var(--green);
-      background: var(--active-glow);
-    }
-
-    .agent-card.dispatched {
-      border-color: var(--yellow);
-      animation: dispatching 0.5s ease;
-    }
-
-    @keyframes dispatching {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.03); }
-      100% { transform: scale(1); }
-    }
-
-    .agent-avatar {
-      font-size: 22px;
-      margin-bottom: 8px;
-    }
-
-    .agent-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-
-    .agent-role {
-      font-size: 10px;
-      color: var(--text-muted);
-      line-height: 1.4;
-      margin-bottom: 10px;
-    }
-
-    .agent-status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 10px;
-    }
-
-    .status-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--text-muted);
-      flex-shrink: 0;
-    }
-
-    .status-dot.idle { background: var(--text-muted); }
-    .status-dot.thinking { background: var(--yellow); animation: pulse 1s infinite; }
-    .status-dot.working { background: var(--green); animation: pulse 0.6s infinite; }
-    .status-dot.done { background: var(--blue); }
-
-    .status-text { color: var(--text-muted); }
-
-    .progress-bar {
-      position: absolute;
-      bottom: 0; left: 0;
-      height: 2px;
-      background: var(--green);
-      transition: width 0.3s;
-      width: 0%;
-    }
-
-    .dispatch-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 16px;
-    }
-
-    .dispatch-panel h2 {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-    }
-
-    .input-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .question-input {
-      flex: 1;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 10px 14px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 13px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .question-input:focus { border-color: var(--blue); }
-    .question-input::placeholder { color: var(--text-muted); }
-
-    .dispatch-btn {
-      background: var(--blue);
-      color: #0d1117;
-      border: none;
-      border-radius: 6px;
-      padding: 10px 20px;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.2s;
-      white-space: nowrap;
-    }
-
-    .dispatch-btn:hover { opacity: 0.85; }
-
-    .result-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px;
-      min-height: 120px;
-      display: none;
-    }
-
-    .result-panel.visible { display: block; }
-
-    .result-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 14px;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .result-tag {
-      background: rgba(88, 166, 255, 0.15);
-      color: var(--blue);
-      border: 1px solid rgba(88, 166, 255, 0.3);
-      border-radius: 4px;
-      padding: 2px 8px;
-      font-size: 11px;
-    }
-
-    .result-body {
-      font-size: 13px;
-      line-height: 1.7;
-      color: var(--text);
-      white-space: pre-wrap;
-    }
-
-    .copy-prompt-box {
-      margin-top: 16px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 14px;
-    }
-
-    .copy-prompt-label {
-      font-size: 10px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-    }
-
-    .copy-prompt-text {
-      font-size: 12px;
-      color: var(--green);
-      line-height: 1.6;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-
-    .copy-btn {
-      margin-top: 10px;
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      border-radius: 4px;
-      padding: 5px 12px;
-      font-family: inherit;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .copy-btn:hover { border-color: var(--blue); color: var(--blue); }
-
-    .examples {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-
-    .example-chip {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      border-radius: 4px;
-      padding: 4px 10px;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .example-chip:hover { border-color: var(--blue); color: var(--blue); }
+    body { background: #0d1117; color: #e6edf3; font-family: 'SF Mono','Fira Code',monospace; padding: 20px; min-height: 100vh; }
+    header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #21262d; font-size: 12px; color: #8b949e; }
+    .logo { width: 8px; height: 8px; border-radius: 50%; background: #3fb950; box-shadow: 0 0 6px #3fb950; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    header span { color: #3fb950; }
+    #officeCanvas { display: block; margin: 0 auto 14px; border: 1px solid #21262d; border-radius: 8px; image-rendering: pixelated; image-rendering: crisp-edges; }
+    .agents-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 8px; margin-bottom: 14px; }
+    .agent-card { background: #161b22; border: 1px solid #21262d; border-radius: 6px; padding: 10px; transition: border-color .2s; }
+    .agent-card.active { border-color: #3fb950; background: rgba(63,185,80,.06); }
+    .agent-card.busy   { border-color: #d29922; background: rgba(210,153,34,.05); }
+    .agent-name { font-size: 11px; font-weight: 700; margin-bottom: 3px; }
+    .agent-role { font-size: 9px; color: #8b949e; margin-bottom: 8px; line-height: 1.5; }
+    .agent-status { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+    .dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .dot.idle  { background: #484f58; }
+    .dot.think { background: #d29922; animation: pulse .7s infinite; }
+    .dot.work  { background: #3fb950; animation: pulse .45s infinite; }
+    .dot.done  { background: #58a6ff; }
+    .dot-label { color: #8b949e; }
+    .dispatch-panel { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .dispatch-panel h2 { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .input-row { display: flex; gap: 8px; }
+    .q-input { flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 5px; padding: 9px 12px; color: #e6edf3; font-family: inherit; font-size: 13px; outline: none; }
+    .q-input:focus { border-color: #58a6ff; }
+    .q-input::placeholder { color: #484f58; }
+    .go-btn { background: #58a6ff; color: #0d1117; border: none; border-radius: 5px; padding: 9px 18px; font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .go-btn:hover { opacity: .85; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .chip { background: #0d1117; border: 1px solid #21262d; color: #8b949e; border-radius: 4px; padding: 3px 8px; font-size: 10px; cursor: pointer; transition: all .15s; }
+    .chip:hover { border-color: #58a6ff; color: #58a6ff; }
+    .chip.multi { border-color: #8b5cf6; color: #8b5cf6; }
+    .chip.multi:hover { border-color: #a78bfa; color: #a78bfa; }
+    .result-panel { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 16px; display: none; }
+    .result-panel.on { display: block; }
+    .res-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 10px; color: #8b949e; flex-wrap: wrap; }
+    .res-tag { background: rgba(88,166,255,.1); color: #58a6ff; border: 1px solid rgba(88,166,255,.2); border-radius: 3px; padding: 2px 6px; font-size: 10px; }
+    .res-tag.multi { background: rgba(139,92,246,.1); color: #a78bfa; border-color: rgba(139,92,246,.25); }
+    .res-sep { color: #484f58; font-size: 10px; }
+    .res-body { font-size: 12px; line-height: 1.7; white-space: pre-wrap; margin-bottom: 12px; color: #8b949e; }
+    .copy-box { background: #0d1117; border: 1px solid #21262d; border-radius: 5px; padding: 12px; }
+    .copy-label { font-size: 9px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .copy-text { font-size: 11px; color: #3fb950; line-height: 1.7; white-space: pre-wrap; }
+    .copy-btn { margin-top: 8px; background: transparent; border: 1px solid #21262d; color: #8b949e; border-radius: 3px; padding: 4px 10px; font-family: inherit; font-size: 10px; cursor: pointer; }
+    .copy-btn:hover { border-color: #58a6ff; color: #58a6ff; }
   </style>
 </head>
 <body>
 
 <header>
   <div class="logo"></div>
-  <h1>D&I Agent Dispatch Center &nbsp;/&nbsp; <span>Cadmus</span></h1>
+  <span>D&amp;I Agent Dispatch Center</span>
+  &nbsp;/&nbsp; Cadmus
 </header>
+
+<canvas id="officeCanvas" width="720" height="205"></canvas>
 
 <div class="agents-grid">
   <div class="agent-card" id="card-orchestrator">
-    <div class="agent-avatar">🎯</div>
-    <div class="agent-name">幕僚長</div>
-    <div class="agent-role">任務分析<br>路由派發</div>
-    <div class="agent-status">
-      <div class="status-dot idle" id="dot-orchestrator"></div>
-      <span class="status-text" id="status-orchestrator">待命</span>
-    </div>
-    <div class="progress-bar" id="bar-orchestrator"></div>
+    <div class="agent-name" style="color:#8b5cf6">大谷</div>
+    <div class="agent-role">幕僚長 · 任務分析<br>路由派發</div>
+    <div class="agent-status"><div class="dot idle" id="dot-orchestrator"></div><span class="dot-label" id="lbl-orchestrator">待命</span></div>
   </div>
-
   <div class="agent-card" id="card-data">
-    <div class="agent-avatar">📊</div>
-    <div class="agent-name">資料幕僚</div>
-    <div class="agent-role">Databricks SQL<br>AIGC / SEO metrics</div>
-    <div class="agent-status">
-      <div class="status-dot idle" id="dot-data"></div>
-      <span class="status-text" id="status-data">待命</span>
-    </div>
-    <div class="progress-bar" id="bar-data"></div>
+    <div class="agent-name" style="color:#3b82f6">安娜</div>
+    <div class="agent-role">資料幕僚 · SQL<br>AIGC / SEO</div>
+    <div class="agent-status"><div class="dot idle" id="dot-data"></div><span class="dot-label" id="lbl-data">待命</span></div>
   </div>
-
   <div class="agent-card" id="card-l2">
-    <div class="agent-avatar">📝</div>
-    <div class="agent-name">L2描述幕僚</div>
-    <div class="agent-role">Metric description<br>AIGC / Bulldozer</div>
-    <div class="agent-status">
-      <div class="status-dot idle" id="dot-l2"></div>
-      <span class="status-text" id="status-l2">待命</span>
-    </div>
-    <div class="progress-bar" id="bar-l2"></div>
+    <div class="agent-name" style="color:#10b981">安海</div>
+    <div class="agent-role">L2描述幕僚<br>Metrics / Bulldozer</div>
+    <div class="agent-status"><div class="dot idle" id="dot-l2"></div><span class="dot-label" id="lbl-l2">待命</span></div>
   </div>
-
   <div class="agent-card" id="card-finance">
-    <div class="agent-avatar">💰</div>
-    <div class="agent-name">Finance幕僚</div>
-    <div class="agent-role">發票系統<br>Finance 資料</div>
-    <div class="agent-status">
-      <div class="status-dot idle" id="dot-finance"></div>
-      <span class="status-text" id="status-finance">待命</span>
-    </div>
-    <div class="progress-bar" id="bar-finance"></div>
+    <div class="agent-name" style="color:#f59e0b">達利恩</div>
+    <div class="agent-role">Finance幕僚<br>發票 / Finance資料</div>
+    <div class="agent-status"><div class="dot idle" id="dot-finance"></div><span class="dot-label" id="lbl-finance">待命</span></div>
   </div>
-
   <div class="agent-card" id="card-jira">
-    <div class="agent-avatar">📋</div>
-    <div class="agent-name">Jira幕僚</div>
-    <div class="agent-role">DATAI 工單<br>任務進度追蹤</div>
-    <div class="agent-status">
-      <div class="status-dot idle" id="dot-jira"></div>
-      <span class="status-text" id="status-jira">待命</span>
-    </div>
-    <div class="progress-bar" id="bar-jira"></div>
+    <div class="agent-name" style="color:#ec4899">JJ</div>
+    <div class="agent-role">Jira幕僚<br>DATAI工單追蹤</div>
+    <div class="agent-status"><div class="dot idle" id="dot-jira"></div><span class="dot-label" id="lbl-jira">待命</span></div>
+  </div>
+  <div class="agent-card" id="card-github">
+    <div class="agent-name" style="color:#38bdf8">窩賈</div>
+    <div class="agent-role">GitHub幕僚<br>PR / 程式碼搜尋</div>
+    <div class="agent-status"><div class="dot idle" id="dot-github"></div><span class="dot-label" id="lbl-github">待命</span></div>
   </div>
 </div>
 
 <div class="dispatch-panel">
   <h2>Dispatch Console</h2>
   <div class="input-row">
-    <input
-      class="question-input"
-      id="questionInput"
-      type="text"
-      placeholder="輸入問題，幕僚長自動判斷派給誰..."
-      autocomplete="off"
-    />
-    <button class="dispatch-btn" onclick="dispatch()">Dispatch →</button>
+    <input class="q-input" id="qInput" type="text" placeholder="輸入問題，幕僚長自動判斷（可同時派多個幕僚）..." autocomplete="off"/>
+    <button class="go-btn" onclick="dispatch()">Dispatch →</button>
   </div>
-  <div class="examples">
-    <span class="example-chip" onclick="setQ('AIGC 上個月 CTR 多少？')">AIGC 上個月 CTR 多少？</span>
-    <span class="example-chip" onclick="setQ('幫我寫 aigc_daily_billing 的 metric description')">寫 L2 description</span>
-    <span class="example-chip" onclick="setQ('DATAI-32 現在狀態怎樣？')">DATAI-32 狀態</span>
-    <span class="example-chip" onclick="setQ('Finance 發票系統最近有什麼問題？')">Finance 發票問題</span>
+  <div class="chips">
+    <span class="chip" onclick="setQ('AIGC 上個月 CTR 多少？')">AIGC CTR</span>
+    <span class="chip" onclick="setQ('幫我寫 aigc_daily_billing 的 metric description')">寫 L2 description</span>
+    <span class="chip" onclick="setQ('DATAI-32 現在狀態怎樣？')">DATAI-32 狀態</span>
+    <span class="chip" onclick="setQ('Finance 發票最近有什麼問題？')">Finance 發票</span>
+    <span class="chip multi" onclick="setQ('DATAI-32 改完後要怎麼驗證 AIGC subpage 數字正確？')">★ 跨幕僚：DATAI-32 驗證</span>
+    <span class="chip multi" onclick="setQ('subpage_count 的定義是什麼，Jira 上有沒有相關工單？')">★ 跨幕僚：定義 + Jira</span>
   </div>
 </div>
 
 <div class="result-panel" id="resultPanel">
-  <div class="result-header">
-    <span id="resultAgent"></span>
-    <span class="result-tag" id="resultTag"></span>
-  </div>
-  <div class="result-body" id="resultBody"></div>
-  <div class="copy-prompt-box">
-    <div class="copy-prompt-label">貼到 Claude Code 的 Prompt</div>
-    <div class="copy-prompt-text" id="promptText"></div>
+  <div class="res-header" id="resHeader"></div>
+  <div class="res-body" id="resBody"></div>
+  <div class="copy-box">
+    <div class="copy-label">貼到 WARP / Claude Code 的 Prompt</div>
+    <div class="copy-text" id="promptText"></div>
     <button class="copy-btn" onclick="copyPrompt()">複製 Prompt</button>
   </div>
 </div>
 
 <script>
-  const AGENTS = {
-    data: {
-      keywords: ['sql','databricks','table','查詢','數據','資料','aigc','bulldozer','ctr','metrics','pipeline','seo','aeo','ga','數字','幾個','多少','分析','流量'],
-      name: '資料幕僚 📊',
-      tag: 'Data Agent',
-      promptFile: '../agents/data.md',
-      description: '判斷：資料查詢類問題',
-      buildPrompt: (q) => `請以「資料幕僚」角色回答以下問題。\n參考知識庫：di-agent/agents/data.md\n\n問題：${q}`
-    },
-    l2: {
-      keywords: ['description','定義','描述','指標','metric','caveat','計算','欄位','schema','寫','撰寫','怎麼算'],
-      name: 'L2描述幕僚 📝',
-      tag: 'L2 Description Agent',
-      description: '判斷：L2 metric description 撰寫',
-      buildPrompt: (q) => `請以「L2描述幕僚」角色回答以下問題。\n參考知識庫：di-agent/agents/l2-description.md\n\n問題：${q}`
-    },
-    finance: {
-      keywords: ['finance','發票','invoice','flora','billing','帳','金額','cost','anomaly'],
-      name: 'Finance幕僚 💰',
-      tag: 'Finance Agent',
-      description: '判斷：Finance 發票系統相關',
-      buildPrompt: (q) => `請以「Finance幕僚」角色回答以下問題。\n參考知識庫：di-agent/agents/finance.md\n\n問題：${q}`
-    },
-    jira: {
-      keywords: ['jira','datai','工單','ticket','pr','pr#','任務','進度','狀態','deploy','merge','review'],
-      name: 'Jira幕僚 📋',
-      tag: 'Jira Agent',
-      description: '判斷：Jira 工單進度追蹤',
-      buildPrompt: (q) => `請以「Jira幕僚」角色回答以下問題。\n參考知識庫：di-agent/agents/jira.md\n\n問題：${q}`
-    }
-  };
+// ── Sprite loader (pixel-agents open source assets) ──
+const BASE = 'https://raw.githubusercontent.com/pablodelucca/pixel-agents/main/webview-ui/public/assets/characters/';
+const SPRITE_IDX = { orchestrator:0, data:1, l2:2, finance:3, jira:4, github:5 };
+const spriteImgs = {};
 
-  function detectAgent(question) {
-    const q = question.toLowerCase();
-    let best = null, bestScore = 0;
-    for (const [key, agent] of Object.entries(AGENTS)) {
-      const score = agent.keywords.filter(k => q.includes(k)).length;
-      if (score > bestScore) { bestScore = score; best = key; }
-    }
-    return best || 'data';
-  }
+Object.entries(SPRITE_IDX).forEach(([id, idx]) => {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload  = () => { spriteImgs[id] = img; };
+  img.src = BASE + 'char_' + idx + '.png';
+});
 
-  function setAllIdle() {
-    for (const key of ['orchestrator','data','l2','finance','jira']) {
-      document.getElementById(`dot-${key}`).className = 'status-dot idle';
-      document.getElementById(`status-${key}`).textContent = '待命';
-      document.getElementById(`bar-${key}`).style.width = '0%';
-      document.getElementById(`card-${key}`).classList.remove('active','dispatched');
-    }
-  }
+// ── Canvas setup ──
+const canvas = document.getElementById('officeCanvas');
+const ctx    = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
 
-  function animateAgent(key, onDone) {
-    const dot = document.getElementById(`dot-${key}`);
-    const status = document.getElementById(`status-${key}`);
-    const bar = document.getElementById(`bar-${key}`);
-    const card = document.getElementById(`card-${key}`);
+const W = 720, H = 205, FY = 158;
+const FW = 16, FH = 24, SC = 3; // frame size × scale
 
-    card.classList.add('dispatched');
-    dot.className = 'status-dot thinking';
-    status.textContent = '收到任務...';
+const CREW = [
+  { id:'orchestrator', name:'大谷',   role:'幕僚長',   color:'#8b5cf6', cx:60  },
+  { id:'data',         name:'安娜',   role:'資料幕僚', color:'#3b82f6', cx:180 },
+  { id:'l2',           name:'安海',   role:'L2 描述',  color:'#10b981', cx:300 },
+  { id:'finance',      name:'達利恩', role:'Finance',  color:'#f59e0b', cx:420 },
+  { id:'jira',         name:'JJ',     role:'Jira',     color:'#ec4899', cx:540 },
+  { id:'github',       name:'窩賈',   role:'GitHub',   color:'#38bdf8', cx:660 },
+];
 
-    setTimeout(() => {
-      dot.className = 'status-dot working';
-      status.textContent = '處理中';
-      card.classList.remove('dispatched');
-      card.classList.add('active');
+const modes = {};
+CREW.forEach(c => modes[c.id] = 'idle');
+let tick = 0;
 
-      let w = 0;
-      const interval = setInterval(() => {
-        w += 12;
-        bar.style.width = w + '%';
-        if (w >= 100) {
-          clearInterval(interval);
-          dot.className = 'status-dot done';
-          status.textContent = '完成';
-          onDone && onDone();
-        }
-      }, 80);
-    }, 600);
-  }
-
-  function dispatch() {
-    const q = document.getElementById('questionInput').value.trim();
-    if (!q) return;
-
-    setAllIdle();
-
-    // 幕僚長先啟動
-    const orchDot = document.getElementById('dot-orchestrator');
-    const orchStatus = document.getElementById('status-orchestrator');
-    const orchCard = document.getElementById('card-orchestrator');
-    orchDot.className = 'status-dot thinking';
-    orchStatus.textContent = '分析中...';
-    orchCard.classList.add('active');
-
-    setTimeout(() => {
-      const agentKey = detectAgent(q);
-      const agent = AGENTS[agentKey];
-
-      orchDot.className = 'status-dot done';
-      orchStatus.textContent = `→ ${agentKey}`;
-
-      animateAgent(agentKey, () => {
-        showResult(q, agentKey, agent);
-      });
-    }, 900);
-  }
-
-  function showResult(q, key, agent) {
-    const panel = document.getElementById('resultPanel');
-    panel.classList.add('visible');
-
-    document.getElementById('resultAgent').textContent = agent.name;
-    document.getElementById('resultTag').textContent = agent.tag;
-    document.getElementById('resultBody').textContent =
-      `[幕僚長] ${agent.description}\n派給 → ${agent.name}\n\n問題已路由。請複製下方 Prompt 貼到 Claude Code 取得完整回答。`;
-    document.getElementById('promptText').textContent = agent.buildPrompt(q);
-  }
-
-  function copyPrompt() {
-    const text = document.getElementById('promptText').textContent;
-    navigator.clipboard.writeText(text).then(() => {
-      const btn = document.querySelector('.copy-btn');
-      btn.textContent = '已複製 ✓';
-      setTimeout(() => btn.textContent = '複製 Prompt', 1500);
-    });
-  }
-
-  function setQ(q) {
-    document.getElementById('questionInput').value = q;
-    dispatch();
-  }
-
-  document.getElementById('questionInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') dispatch();
+// ── Background ──
+function drawBg() {
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#111820'; ctx.fillRect(0,FY,W,H-FY);
+  ctx.strokeStyle = '#181f2b'; ctx.lineWidth = 1;
+  for (let x=0; x<W; x+=40) { ctx.beginPath(); ctx.moveTo(x+.5,FY); ctx.lineTo(x+.5,H); ctx.stroke(); }
+  for (let y=FY; y<H; y+=18) { ctx.beginPath(); ctx.moveTo(0,y+.5); ctx.lineTo(W,y+.5); ctx.stroke(); }
+  CREW.forEach(c => {
+    if (modes[c.id] === 'idle') return;
+    const g = ctx.createRadialGradient(c.cx,FY-40,0,c.cx,FY-40,80);
+    g.addColorStop(0, c.color+'1e'); g.addColorStop(1,'transparent');
+    ctx.fillStyle = g; ctx.fillRect(c.cx-80,0,160,FY);
   });
+  ctx.fillStyle = '#21262d'; ctx.fillRect(0,0,W,3);
+}
+
+// ── Desk ──
+function drawDesk(cx, color, mode) {
+  ctx.fillStyle = '#1a202c';
+  ctx.fillRect(cx-44,FY-28,6,28); ctx.fillRect(cx+38,FY-28,6,28);
+  ctx.fillStyle = '#252d3a'; ctx.fillRect(cx-46,FY-42,92,10);
+  ctx.fillStyle = '#1e2530'; ctx.fillRect(cx-46,FY-32,92,3);
+  ctx.fillStyle = '#0a0e14'; ctx.fillRect(cx-15,FY-80,30,38);
+  ctx.fillStyle = color;
+  ctx.globalAlpha = mode==='working' ? 0.8 : mode==='thinking' ? 0.5 : 0.22;
+  ctx.fillRect(cx-12,FY-77,24,30); ctx.globalAlpha = 1;
+  ctx.fillStyle = '#e6edf3';
+  ctx.globalAlpha = mode==='working' ? 0.55 : 0.12;
+  [14,10,13,7,11].forEach((w,i) => ctx.fillRect(cx-9,FY-73+i*5,w,2));
+  ctx.globalAlpha = 1;
+  if (mode==='working' && Math.floor(tick/18)%2===0) {
+    ctx.fillStyle='#e6edf3'; ctx.globalAlpha=0.65;
+    ctx.fillRect(cx-9,FY-53,3,7); ctx.globalAlpha=1;
+  }
+  ctx.fillStyle = '#0a0e14'; ctx.fillRect(cx-3,FY-42,6,3);
+}
+
+// ── Character (sprite or fallback) ──
+function drawChar(cx, agentId, color, mode) {
+  const img = spriteImgs[agentId];
+
+  // Frame selection
+  let fi = 1; // idle
+  if (mode==='working')  fi = Math.floor(tick/18)%2===0 ? 3 : 4;
+  if (mode==='done')     fi = [0,1,2,1][Math.floor(tick/10)%4];
+  if (mode==='thinking') fi = Math.floor(tick/25)%2===0 ? 1 : 0;
+
+  // Y offset
+  let yo = 0;
+  if (mode==='idle')     yo = Math.floor(tick/40)%2===0 ? 0 : -1;
+  if (mode==='done')     yo = -(Math.abs(Math.sin(tick*0.13))*8|0);
+  if (mode==='thinking') yo = Math.floor(tick/22)%2===0 ? 0 : -1;
+
+  const dx = cx - (FW*SC/2);
+  const dy = FY - FH*SC + yo;
+
+  if (img) {
+    // Draw sprite from sheet: 7 frames wide, direction row 0 = down (facing viewer)
+    ctx.drawImage(img, fi*FW, 0, FW, FH, dx, dy, FW*SC, FH*SC);
+  } else {
+    // Simple fallback block character
+    ctx.fillStyle = '#f2c9a0'; ctx.fillRect(dx+14, dy+2, 18, 18);
+    ctx.fillStyle = color;     ctx.fillRect(dx+10, dy+20, 26, 28);
+    ctx.fillStyle = '#1e3a5f'; ctx.fillRect(dx+12, dy+48, 10, 18);
+    ctx.fillRect(dx+22, dy+48, 10, 18);
+  }
+
+  // Thinking bubble
+  if (mode==='thinking') {
+    ctx.fillStyle = '#d29922';
+    ctx.globalAlpha = 0.5 + Math.sin(tick*0.12)*0.4;
+    ctx.fillRect(cx+12,dy-3,3,3); ctx.fillRect(cx+17,dy-9,5,5); ctx.fillRect(cx+24,dy-17,9,9);
+    ctx.globalAlpha = 1;
+  }
+
+  // Done sparkles
+  if (mode==='done') {
+    const t = tick*0.14;
+    ctx.fillStyle = '#ffd700'; ctx.globalAlpha = 0.85;
+    ctx.fillRect((cx+22+Math.sin(t)*9)|0,   (dy+6+Math.cos(t)*6)|0,   4,4);
+    ctx.fillRect((cx-26+Math.sin(t+2)*9)|0, (dy+14+Math.cos(t+2)*6)|0,4,4);
+    ctx.fillRect((cx+18+Math.sin(t+4)*7)|0, (dy+2+Math.cos(t+4)*5)|0, 3,3);
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ── Label ──
+function drawLabel(cx, name, role, color, mode) {
+  ctx.textAlign = 'center';
+
+  // Name — bold, high contrast
+  ctx.font = 'bold 11px monospace';
+  ctx.fillStyle = mode==='idle' ? '#c9d1d9' : color;
+  ctx.fillText(name, cx, FY+14);
+
+  // Role — smaller, always visible
+  ctx.font = '9px monospace';
+  ctx.fillStyle = mode==='idle' ? '#6e7681' : color + 'cc';
+  ctx.fillText(role, cx, FY+25);
+
+  // Status
+  ctx.font = '9px monospace';
+  if (mode!=='idle') {
+    const map = {thinking:'◐ 分析中', working:'● 執行中', done:'✓ 完成'};
+    ctx.fillStyle = mode==='done' ? '#3fb950' : mode==='thinking' ? '#d29922' : color;
+    ctx.fillText(map[mode]||'', cx, FY+35);
+  } else {
+    ctx.fillStyle = '#8b949e';
+    ctx.fillText('待命', cx, FY+35);
+  }
+}
+
+// ── Render loop ──
+function render() {
+  tick++;
+  ctx.clearRect(0,0,W,H);
+  drawBg();
+  CREW.forEach(c => {
+    drawDesk(c.cx, c.color, modes[c.id]);
+    drawChar(c.cx, c.id, c.color, modes[c.id]);
+    drawLabel(c.cx, c.name, c.role, c.color, modes[c.id]);
+  });
+  requestAnimationFrame(render);
+}
+render();
+
+// ── Agent definitions ──
+const AGENTS = {
+  data: {
+    keywords: ['sql','databricks','table','查詢','數據','資料','aigc','bulldozer','ctr','metric','pipeline','seo','aeo','ga','數字','幾個','多少','分析','流量','subpage','view'],
+    name:'資料幕僚', tag:'Data Agent',
+    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/data.md\n以「資料幕僚」角色回答：' + q
+  },
+  l2: {
+    keywords: ['description','定義','描述','指標','caveat','計算','欄位','schema','寫','撰寫','怎麼算','define'],
+    name:'L2描述幕僚', tag:'L2 Description',
+    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/l2-description.md\n以「L2描述幕僚」角色回答：' + q
+  },
+  finance: {
+    keywords: ['finance','發票','invoice','flora','billing','帳','金額','cost','anomaly'],
+    name:'Finance幕僚', tag:'Finance Agent',
+    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/finance.md\n以「Finance幕僚」角色回答：' + q
+  },
+  jira: {
+    keywords: ['jira','datai','工單','ticket','任務','進度','deploy','merge','checklist','驗證'],
+    name:'JJ', tag:'Jira Agent',
+    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/jira.md\n以「Jira幕僚」角色回答：' + q
+  },
+  github: {
+    keywords: ['github','pr','pull request','repo','程式碼','code','branch','commit','diff','檔案','function','sql file','codebase','merge','review'],
+    name:'窩賈', tag:'GitHub Agent',
+    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/github.md\n以「GitHub幕僚」角色回答：' + q
+  }
+};
+
+// ── Dispatch ──
+function detectAgents(q) {
+  const ql = q.toLowerCase();
+  const scored = Object.entries(AGENTS)
+    .map(([k,a]) => ({key:k, score: a.keywords.filter(w=>ql.includes(w)).length}))
+    .filter(x => x.score > 0)
+    .sort((a,b) => b.score - a.score);
+  if (!scored.length) return ['data'];
+  if (scored.length >= 2 && scored[1].score >= 1) return [scored[0].key, scored[1].key];
+  return [scored[0].key];
+}
+
+function setUI(id, dotCls, label) {
+  const d = document.getElementById('dot-'+id);
+  const l = document.getElementById('lbl-'+id);
+  const c = document.getElementById('card-'+id);
+  if (d) d.className = 'dot ' + dotCls;
+  if (l) l.textContent = label;
+  if (c) {
+    c.classList.remove('active','busy');
+    if (dotCls==='work'||dotCls==='done') c.classList.add('active');
+    if (dotCls==='think') c.classList.add('busy');
+  }
+}
+
+function resetAll() {
+  CREW.forEach(c => { modes[c.id]='idle'; setUI(c.id,'idle','待命'); });
+}
+
+function dispatch() {
+  const q = document.getElementById('qInput').value.trim();
+  if (!q) return;
+  resetAll();
+
+  modes.orchestrator = 'thinking';
+  setUI('orchestrator','think','分析中...');
+
+  setTimeout(() => {
+    const keys = detectAgents(q);
+    const isMulti = keys.length > 1;
+
+    modes.orchestrator = 'done';
+    setUI('orchestrator','done', isMulti ? ('→ '+keys.length+'個幕僚') : ('→ '+AGENTS[keys[0]].name));
+
+    keys.forEach((key,i) => setTimeout(() => {
+      modes[key] = 'working';
+      setUI(key,'work','處理中');
+    }, i*250));
+
+    setTimeout(() => {
+      keys.forEach(key => { modes[key]='done'; setUI(key,'done','完成'); });
+      showResult(q, keys.map(k=>AGENTS[k]), isMulti);
+      setTimeout(resetAll, 4000);
+    }, 2000 + keys.length*250);
+  }, 900);
+}
+
+function showResult(q, agents, isMulti) {
+  document.getElementById('resultPanel').classList.add('on');
+
+  // Build header using DOM (no innerHTML with user data)
+  const header = document.getElementById('resHeader');
+  header.textContent = '';
+  agents.forEach((a, i) => {
+    if (i > 0) {
+      const sep = document.createElement('span');
+      sep.className = 'res-sep'; sep.textContent = ' + ';
+      header.appendChild(sep);
+    }
+    const nameEl = document.createElement('span');
+    nameEl.textContent = a.name;
+    header.appendChild(nameEl);
+
+    const tag = document.createElement('span');
+    tag.className = 'res-tag' + (isMulti ? ' multi' : '');
+    tag.textContent = a.tag;
+    header.appendChild(tag);
+  });
+
+  document.getElementById('resBody').textContent = isMulti
+    ? '[幕僚長] 這個問題跨越 ' + agents.length + ' 個領域，同時派發。\n以下 prompt 已整合，貼到 Claude Code 執行：'
+    : '[幕僚長] 這是「' + agents[0].name + '」的工作範疇。\n以下 prompt 請貼到 WARP / Claude Code 執行：';
+
+  document.getElementById('promptText').textContent = isMulti
+    ? agents.map((a,i) => '# Step '+(i+1)+'：'+a.name+'\n'+a.buildPrompt(q)).join('\n\n---\n\n')
+    : agents[0].buildPrompt(q);
+}
+
+function copyPrompt() {
+  navigator.clipboard.writeText(document.getElementById('promptText').textContent).then(() => {
+    const b = document.querySelector('.copy-btn');
+    b.textContent = '已複製 ✓';
+    setTimeout(() => b.textContent = '複製 Prompt', 1500);
+  });
+}
+
+function setQ(q) { document.getElementById('qInput').value = q; dispatch(); }
+document.getElementById('qInput').addEventListener('keydown', e => { if (e.key==='Enter') dispatch(); });
 </script>
 </body>
 </html>
