@@ -12,7 +12,7 @@
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
     header span { color: #3fb950; }
     #officeCanvas { display: block; margin: 0 auto 14px; border: 1px solid #21262d; border-radius: 8px; image-rendering: pixelated; image-rendering: crisp-edges; }
-    .agents-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 8px; margin-bottom: 14px; }
+    .agents-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
     .agent-card { background: #161b22; border: 1px solid #21262d; border-radius: 6px; padding: 10px; transition: border-color .2s; }
     .agent-card.active { border-color: #3fb950; background: rgba(63,185,80,.06); }
     .agent-card.busy   { border-color: #d29922; background: rgba(210,153,34,.05); }
@@ -60,7 +60,7 @@
   &nbsp;/&nbsp; Cadmus
 </header>
 
-<canvas id="officeCanvas" width="720" height="205"></canvas>
+<canvas id="officeCanvas" width="960" height="205"></canvas>
 
 <div class="agents-grid">
   <div class="agent-card" id="card-orchestrator">
@@ -93,6 +93,16 @@
     <div class="agent-role">GitHub幕僚<br>PR / 程式碼搜尋</div>
     <div class="agent-status"><div class="dot idle" id="dot-github"></div><span class="dot-label" id="lbl-github">待命</span></div>
   </div>
+  <div class="agent-card" id="card-slack">
+    <div class="agent-name" style="color:#a78bfa">劉嘉玲</div>
+    <div class="agent-role">Slack幕僚<br>頻道 / 訊息搜尋</div>
+    <div class="agent-status"><div class="dot idle" id="dot-slack"></div><span class="dot-label" id="lbl-slack">待命</span></div>
+  </div>
+  <div class="agent-card" id="card-google">
+    <div class="agent-name" style="color:#34d399">Yumi</div>
+    <div class="agent-role">Google幕僚<br>GA4 / Search Console</div>
+    <div class="agent-status"><div class="dot idle" id="dot-google"></div><span class="dot-label" id="lbl-google">待命</span></div>
+  </div>
 </div>
 
 <div class="dispatch-panel">
@@ -124,7 +134,7 @@
 <script>
 // ── Sprite loader (pixel-agents open source assets) ──
 const BASE = 'https://raw.githubusercontent.com/pablodelucca/pixel-agents/main/webview-ui/public/assets/characters/';
-const SPRITE_IDX = { orchestrator:0, data:1, l2:2, finance:3, jira:4, github:5 };
+const SPRITE_IDX = { orchestrator:0, data:1, l2:2, finance:3, jira:4, github:5, slack:2, google:3 };
 const spriteImgs = {};
 
 Object.entries(SPRITE_IDX).forEach(([id, idx]) => {
@@ -139,7 +149,7 @@ const canvas = document.getElementById('officeCanvas');
 const ctx    = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
-const W = 720, H = 205, FY = 158;
+const W = 960, H = 205, FY = 158;
 const FW = 16, FH = 24, SC = 3; // frame size × scale
 
 const CREW = [
@@ -149,6 +159,8 @@ const CREW = [
   { id:'finance',      name:'達利恩', role:'Finance',  color:'#f59e0b', cx:420 },
   { id:'jira',         name:'JJ',     role:'Jira',     color:'#ec4899', cx:540 },
   { id:'github',       name:'窩賈',   role:'GitHub',   color:'#38bdf8', cx:660 },
+  { id:'slack',        name:'劉嘉玲', role:'Slack',    color:'#a78bfa', cx:780 },
+  { id:'google',       name:'Yumi',   role:'Google',   color:'#34d399', cx:900 },
 ];
 
 const modes = {};
@@ -307,6 +319,16 @@ const AGENTS = {
     keywords: ['github','pr','pull request','repo','程式碼','code','branch','commit','diff','檔案','function','sql file','codebase','merge','review'],
     name:'窩賈', tag:'GitHub Agent',
     buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/github.md\n以「GitHub幕僚」角色回答：' + q
+  },
+  slack: {
+    keywords: ['slack','頻道','channel','訊息','message','討論','誰說','有沒有說','聊天'],
+    name:'劉嘉玲', tag:'Slack Agent',
+    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/slack.md\n以「Slack幕僚」角色回答：' + q
+  },
+  google: {
+    keywords: ['google','ga4','gsc','search console','organic','impression','keyword','關鍵字','搜尋排名','ctr','click','ga report','analytics report'],
+    name:'Yumi', tag:'Google Agent',
+    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/google.md\n以「Google幕僚」角色回答：' + q
   }
 };
 
