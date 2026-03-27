@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&I Agent Dispatch Center</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --green: #3fb950;
+      --blue: #58a6ff;
+      --yellow: #d29922;
+      --purple: #bc8cff;
+      --orange: #f0883e;
+      --red: #f85149;
+      --active-glow: rgba(63, 185, 80, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      width: 10px; height: 10px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    header h1 { font-size: 14px; color: var(--text-muted); font-weight: 400; }
+    header h1 span { color: var(--green); }
+
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .agent-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .agent-card:hover { border-color: var(--blue); }
+
+    .agent-card.active {
+      border-color: var(--green);
+      background: var(--active-glow);
+    }
+
+    .agent-card.dispatched {
+      border-color: var(--yellow);
+      animation: dispatching 0.5s ease;
+    }
+
+    @keyframes dispatching {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+
+    .agent-avatar {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .agent-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .agent-role {
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+
+    .agent-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .status-dot.idle { background: var(--text-muted); }
+    .status-dot.thinking { background: var(--yellow); animation: pulse 1s infinite; }
+    .status-dot.working { background: var(--green); animation: pulse 0.6s infinite; }
+    .status-dot.done { background: var(--blue); }
+
+    .status-text { color: var(--text-muted); }
+
+    .progress-bar {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 2px;
+      background: var(--green);
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    .dispatch-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .dispatch-panel h2 {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .question-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .question-input:focus { border-color: var(--blue); }
+    .question-input::placeholder { color: var(--text-muted); }
+
+    .dispatch-btn {
+      background: var(--blue);
+      color: #0d1117;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+
+    .dispatch-btn:hover { opacity: 0.85; }
+
+    .result-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      min-height: 120px;
+      display: none;
+    }
+
+    .result-panel.visible { display: block; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .result-tag {
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--blue);
+      border: 1px solid rgba(88, 166, 255, 0.3);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+    }
+
+    .result-body {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    .copy-prompt-box {
+      margin-top: 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+    }
+
+    .copy-prompt-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .copy-prompt-text {
+      font-size: 12px;
+      color: var(--green);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      margin-top: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 5px 12px;
+      font-family: inherit;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+    .examples {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .example-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .example-chip:hover { border-color: var(--blue); color: var(--blue); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo"></div>
+  <h1>D&I Agent Dispatch Center &nbsp;/&nbsp; <span>Cadmus</span></h1>
+</header>
+
+<div class="agents-grid">
+  <div class="agent-card" id="card-orchestrator">
+    <div class="agent-avatar">🎯</div>
+    <div class="agent-name">幕僚長</div>
+    <div class="agent-role">任務分析<br>路由派發</div>
+    <div class="agent-status">
+      <div class="status-dot idle" id="dot-orchestrator"></div>
+      <span class="status-text" id="status-orchestrator">待命</span>
+    </div>
+    <div class="progress-bar" id="bar-orchestrator"></div>
+  </div>
+
+  <div class="agent-card" id="card-data">
+    <div class="agent-avatar">📊</div>
+    <div class="agent-name">資料幕僚</div>
+    <div class="agent-role">Databricks SQL<br>AIGC / SEO metrics</div>
+    <div class="agent-status">
+      <div class="status-dot idle" id="dot-data"></div>
+      <span class="status-text" id="status-data">待命</span>
+    </div>
+    <div class="progress-bar" id="bar-data"></div>
+  </div>
+
+  <div class="agent-card" id="card-l2">
+    <div class="agent-avatar">📝</div>
+    <div class="agent-name">L2描述幕僚</div>
+    <div class="agent-role">Metric description<br>AIGC / Bulldozer</div>
+    <div class="agent-status">
+      <div class="status-dot idle" id="dot-l2"></div>
+      <span class="status-text" id="status-l2">待命</span>
+    </div>
+    <div class="progress-bar" id="bar-l2"></div>
+  </div>
+
+  <div class="agent-card" id="card-finance">
+    <div class="agent-avatar">💰</div>
+    <div class="agent-name">Finance幕僚</div>
+    <div class="agent-role">發票系統<br>Finance 資料</div>
+    <div class="agent-status">
+      <div class="status-dot idle" id="dot-finance"></div>
+      <span class="status-text" id="status-finance">待命</span>
+    </div>
+    <div class="progress-bar" id="bar-finance"></div>
+  </div>
+
+  <div class="agent-card" id="card-jira">
+    <div class="agent-avatar">📋</div>
+    <div class="agent-name">Jira幕僚</div>
+    <div class="agent-role">DATAI 工單<br>任務進度追蹤</div>
+    <div class="agent-status">
+      <div class="status-dot idle" id="dot-jira"></div>
+      <span class="status-text" id="status-jira">待命</span>
+    </div>
+    <div class="progress-bar" id="bar-jira"></div>
+  </div>
+</div>
+
+<div class="dispatch-panel">
+  <h2>Dispatch Console</h2>
+  <div class="input-row">
+    <input
+      class="question-input"
+      id="questionInput"
+      type="text"
+      placeholder="輸入問題，幕僚長自動判斷派給誰..."
+      autocomplete="off"
+    />
+    <button class="dispatch-btn" onclick="dispatch()">Dispatch →</button>
+  </div>
+  <div class="examples">
+    <span class="example-chip" onclick="setQ('AIGC 上個月 CTR 多少？')">AIGC 上個月 CTR 多少？</span>
+    <span class="example-chip" onclick="setQ('幫我寫 aigc_daily_billing 的 metric description')">寫 L2 description</span>
+    <span class="example-chip" onclick="setQ('DATAI-32 現在狀態怎樣？')">DATAI-32 狀態</span>
+    <span class="example-chip" onclick="setQ('Finance 發票系統最近有什麼問題？')">Finance 發票問題</span>
+  </div>
+</div>
+
+<div class="result-panel" id="resultPanel">
+  <div class="result-header">
+    <span id="resultAgent"></span>
+    <span class="result-tag" id="resultTag"></span>
+  </div>
+  <div class="result-body" id="resultBody"></div>
+  <div class="copy-prompt-box">
+    <div class="copy-prompt-label">貼到 Claude Code 的 Prompt</div>
+    <div class="copy-prompt-text" id="promptText"></div>
+    <button class="copy-btn" onclick="copyPrompt()">複製 Prompt</button>
+  </div>
+</div>
+
+<script>
+  const AGENTS = {
+    data: {
+      keywords: ['sql','databricks','table','查詢','數據','資料','aigc','bulldozer','ctr','metrics','pipeline','seo','aeo','ga','數字','幾個','多少','分析','流量'],
+      name: '資料幕僚 📊',
+      tag: 'Data Agent',
+      promptFile: '../agents/data.md',
+      description: '判斷：資料查詢類問題',
+      buildPrompt: (q) => `請以「資料幕僚」角色回答以下問題。\n參考知識庫：di-agent/agents/data.md\n\n問題：${q}`
+    },
+    l2: {
+      keywords: ['description','定義','描述','指標','metric','caveat','計算','欄位','schema','寫','撰寫','怎麼算'],
+      name: 'L2描述幕僚 📝',
+      tag: 'L2 Description Agent',
+      description: '判斷：L2 metric description 撰寫',
+      buildPrompt: (q) => `請以「L2描述幕僚」角色回答以下問題。\n參考知識庫：di-agent/agents/l2-description.md\n\n問題：${q}`
+    },
+    finance: {
+      keywords: ['finance','發票','invoice','flora','billing','帳','金額','cost','anomaly'],
+      name: 'Finance幕僚 💰',
+      tag: 'Finance Agent',
+      description: '判斷：Finance 發票系統相關',
+      buildPrompt: (q) => `請以「Finance幕僚」角色回答以下問題。\n參考知識庫：di-agent/agents/finance.md\n\n問題：${q}`
+    },
+    jira: {
+      keywords: ['jira','datai','工單','ticket','pr','pr#','任務','進度','狀態','deploy','merge','review'],
+      name: 'Jira幕僚 📋',
+      tag: 'Jira Agent',
+      description: '判斷：Jira 工單進度追蹤',
+      buildPrompt: (q) => `請以「Jira幕僚」角色回答以下問題。\n參考知識庫：di-agent/agents/jira.md\n\n問題：${q}`
+    }
+  };
+
+  function detectAgent(question) {
+    const q = question.toLowerCase();
+    let best = null, bestScore = 0;
+    for (const [key, agent] of Object.entries(AGENTS)) {
+      const score = agent.keywords.filter(k => q.includes(k)).length;
+      if (score > bestScore) { bestScore = score; best = key; }
+    }
+    return best || 'data';
+  }
+
+  function setAllIdle() {
+    for (const key of ['orchestrator','data','l2','finance','jira']) {
+      document.getElementById(`dot-${key}`).className = 'status-dot idle';
+      document.getElementById(`status-${key}`).textContent = '待命';
+      document.getElementById(`bar-${key}`).style.width = '0%';
+      document.getElementById(`card-${key}`).classList.remove('active','dispatched');
+    }
+  }
+
+  function animateAgent(key, onDone) {
+    const dot = document.getElementById(`dot-${key}`);
+    const status = document.getElementById(`status-${key}`);
+    const bar = document.getElementById(`bar-${key}`);
+    const card = document.getElementById(`card-${key}`);
+
+    card.classList.add('dispatched');
+    dot.className = 'status-dot thinking';
+    status.textContent = '收到任務...';
+
+    setTimeout(() => {
+      dot.className = 'status-dot working';
+      status.textContent = '處理中';
+      card.classList.remove('dispatched');
+      card.classList.add('active');
+
+      let w = 0;
+      const interval = setInterval(() => {
+        w += 12;
+        bar.style.width = w + '%';
+        if (w >= 100) {
+          clearInterval(interval);
+          dot.className = 'status-dot done';
+          status.textContent = '完成';
+          onDone && onDone();
+        }
+      }, 80);
+    }, 600);
+  }
+
+  function dispatch() {
+    const q = document.getElementById('questionInput').value.trim();
+    if (!q) return;
+
+    setAllIdle();
+
+    // 幕僚長先啟動
+    const orchDot = document.getElementById('dot-orchestrator');
+    const orchStatus = document.getElementById('status-orchestrator');
+    const orchCard = document.getElementById('card-orchestrator');
+    orchDot.className = 'status-dot thinking';
+    orchStatus.textContent = '分析中...';
+    orchCard.classList.add('active');
+
+    setTimeout(() => {
+      const agentKey = detectAgent(q);
+      const agent = AGENTS[agentKey];
+
+      orchDot.className = 'status-dot done';
+      orchStatus.textContent = `→ ${agentKey}`;
+
+      animateAgent(agentKey, () => {
+        showResult(q, agentKey, agent);
+      });
+    }, 900);
+  }
+
+  function showResult(q, key, agent) {
+    const panel = document.getElementById('resultPanel');
+    panel.classList.add('visible');
+
+    document.getElementById('resultAgent').textContent = agent.name;
+    document.getElementById('resultTag').textContent = agent.tag;
+    document.getElementById('resultBody').textContent =
+      `[幕僚長] ${agent.description}\n派給 → ${agent.name}\n\n問題已路由。請複製下方 Prompt 貼到 Claude Code 取得完整回答。`;
+    document.getElementById('promptText').textContent = agent.buildPrompt(q);
+  }
+
+  function copyPrompt() {
+    const text = document.getElementById('promptText').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = '已複製 ✓';
+      setTimeout(() => btn.textContent = '複製 Prompt', 1500);
+    });
+  }
+
+  function setQ(q) {
+    document.getElementById('questionInput').value = q;
+    dispatch();
+  }
+
+  document.getElementById('questionInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') dispatch();
+  });
+</script>
+</body>
+</html>
