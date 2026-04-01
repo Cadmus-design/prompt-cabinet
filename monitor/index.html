@@ -456,7 +456,7 @@ function buildPrompt(agentKey, q, intent, entities, agentKeys) {
   const taskInstruction = buildTaskInstruction(agentKey, q, intent, entities, isMulti, stepNum, stepTotal);
 
   return [
-    `請讀取 ~/Documents/dev/personal/di-agent/agents/${a.file}.md`,
+    `請讀取 ~/Documents/dev/personal/prompt-cabinet/agents/${a.file}.md`,
     ``,
     briefLines,
     ``,
