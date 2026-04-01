@@ -251,44 +251,77 @@ di-agent/
 ```
 用戶輸入問題
      ↓
-detectAgents() — 關鍵字比對，決定派給哪個幕僚
+extractNamedEntities() — 抽取工單號、PR號、table名
      ↓
-Canvas 動畫 — 顯示幕僚工作狀態（思考/執行/完成）
+detectIntent() — 判斷意圖（查詢/撰寫/追蹤/驗證...）
      ↓
-生成 Prompt — 自動組出「請讀取 agents/xxx.md，以角色回答：...」
+detectAgents() — 三層路由決策
+     ↓
+Canvas 動畫 + 思考流文字 — 幕僚長逐行顯示分析過程
+     ↓
+buildPrompt() — 生成含任務簡報的 enriched prompt
      ↓
 複製按鈕 — 貼到 Claude Code 執行
 ```
 
-### Dispatch 邏輯
+### Dispatch 三層邏輯
+
+**第一層：Named Entity 特殊規則（最高優先）**
 
 ```javascript
-// 每個 agent 有關鍵字列表
-const AGENTS = {
-  data: {
-    keywords: ['sql','databricks','數據','aigc','ctr','pipeline',...],
-    buildPrompt: q => '請讀取 ~/di-agent/agents/data.md\n以「資料幕僚」角色回答：' + q
-  },
-  jira: {
-    keywords: ['jira','datai','工單','ticket','進度','deploy',...],
-    buildPrompt: q => '請讀取 ~/di-agent/agents/jira.md\n以「Jira幕僚」角色回答：' + q
-  },
-  ...
-}
-
-// 計分：看問題裡有幾個關鍵字命中
-function detectAgents(q) {
-  const scored = Object.entries(AGENTS)
-    .map(([k,a]) => ({ key:k, score: a.keywords.filter(w=>q.includes(w)).length }))
-    .filter(x => x.score > 0)
-    .sort((a,b) => b.score - a.score);
-
-  // 如果第二名也有命中，同時派兩個幕僚（跨域問題）
-  if (scored.length >= 2 && scored[1].score >= 1)
-    return [scored[0].key, scored[1].key];
-  return [scored[0].key];
+function detectAgents(q, entities) {
+  // 偵測到工單號 → Jira 先進，若問題含數據驗證 → 加資料幕僚
+  if (entities.tickets.length > 0) {
+    const hasDataWord = /* entity or intent match */;
+    if (hasDataWord) return ['jira', 'data']; // 序列：先查狀態，再驗數字
+    return ['jira'];
+  }
+  // 偵測到 PR 號 → 直接路由 GitHub
+  if (entities.prs.length > 0) return ['github'];
+  // ...
 }
 ```
+
+**第二層：Intent 偵測**
+
+```javascript
+function detectIntent(q) {
+  // 分類：查詢 / 文件撰寫 / 進度追蹤 / 搜尋查找 / 問題排查 / 分析建議 / 驗證確認
+  // 找出問題裡的「動作」，補強 entity 計分的不足
+}
+```
+
+**第三層：加權計分**
+
+```javascript
+// entity 命中 ×2（系統名稱、table名），intent 命中 ×1（動作詞）
+const eScore = a.entities.filter(w => ql.includes(w)).length * 2;
+const iScore = a.intents.filter(w => ql.includes(w)).length;
+
+// 跨域門檻：第二名需要有 entity 命中（不是純 intent 湊分）
+if (secondEntityScore >= 1 && second.score >= 2) return [top.key, second.key];
+```
+
+### Prompt 生成（enriched）
+
+HTML 不執行任何 AI 功能，只做一件事：**把問題包裝成含幕僚長簡報的 Prompt**。
+
+```
+請讀取 ~/di-agent/agents/jira.md
+
+┌─ 幕僚長任務簡報
+│  原始問題：DATAI-32 改完後要怎麼驗證？
+│  意圖：驗證確認
+│  實體：DATAI-32
+│  協作順序：Step 1 / 2
+│  建議工具：mcp__claude_ai_Atlassian__getJiraIssue
+└─────────────────────────────────
+
+以「Jira幕僚（JJ）」角色執行：
+查詢 DATAI-32 目前狀態與待辦驗證步驟，整理後供 Step 2 繼續使用。
+```
+
+跨域問題時，prompt 會包含兩個 Step，並在 Step 2 說明「請先確認 Step 1 的輸出再繼續」。
 
 ### Canvas 動畫
 
@@ -301,17 +334,9 @@ function detectAgents(q) {
 | working（執行中） | 打字動作 | 角色主色 |
 | done（完成） | 跳躍 + 金色閃光 | 綠色 |
 
-像素人形圖片從開源 [pixel-agents](https://github.com/pablodelucca/pixel-agents) 載入，失敗時用純矩形作 fallback。
+幕僚長「分析中」時，畫面同時顯示逐行點亮的思考流，說明偵測到什麼實體、為何派給誰。
 
-### 重點設計：Prompt 生成
-
-HTML 不「執行」任何 AI 功能。它只做一件事：**把問題包裝成格式化的 Prompt，讓你複製貼到 Claude Code**。
-
-```javascript
-buildPrompt: q => '請讀取 ~/di-agent/agents/data.md\n以「資料幕僚」角色回答：' + q
-```
-
-這個設計非常輕量，不需要 API key，不需要後端。
+像素人形圖片從開源 [pixel-agents](https://github.com/pablodelucca/pixel-agents) 載入，失敗時用純矩形 fallback。
 
 ---
 
