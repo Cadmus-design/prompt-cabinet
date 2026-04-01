@@ -3,61 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D&I Agent Dispatch Center</title>
+  <title>Prompt Cabinet — Agent Dispatch</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #0d1117; color: #e6edf3; font-family: 'SF Mono','Fira Code',monospace; padding: 20px; min-height: 100vh; }
-    header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #21262d; font-size: 12px; color: #8b949e; }
+    header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #21262d; font-size: 14px; color: #8b949e; }
     .logo { width: 8px; height: 8px; border-radius: 50%; background: #3fb950; box-shadow: 0 0 6px #3fb950; animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
     header span { color: #3fb950; }
+
     #officeCanvas { display: block; margin: 0 auto 14px; border: 1px solid #21262d; border-radius: 8px; image-rendering: pixelated; image-rendering: crisp-edges; }
+
     .agents-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
     .agent-card { background: #161b22; border: 1px solid #21262d; border-radius: 6px; padding: 10px; transition: border-color .2s; }
     .agent-card.active { border-color: #3fb950; background: rgba(63,185,80,.06); }
     .agent-card.busy   { border-color: #d29922; background: rgba(210,153,34,.05); }
-    .agent-name { font-size: 11px; font-weight: 700; margin-bottom: 3px; }
-    .agent-role { font-size: 9px; color: #8b949e; margin-bottom: 8px; line-height: 1.5; }
-    .agent-status { display: flex; align-items: center; gap: 5px; font-size: 10px; }
-    .dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .agent-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+    .agent-role { font-size: 11px; color: #8b949e; margin-bottom: 8px; line-height: 1.5; }
+    .agent-status { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .dot.idle  { background: #484f58; }
     .dot.think { background: #d29922; animation: pulse .7s infinite; }
     .dot.work  { background: #3fb950; animation: pulse .45s infinite; }
     .dot.done  { background: #58a6ff; }
     .dot-label { color: #8b949e; }
+
     .dispatch-panel { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
-    .dispatch-panel h2 { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .dispatch-panel h2 { font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
     .input-row { display: flex; gap: 8px; }
-    .q-input { flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 5px; padding: 9px 12px; color: #e6edf3; font-family: inherit; font-size: 13px; outline: none; }
+    .q-input { flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 5px; padding: 9px 12px; color: #e6edf3; font-family: inherit; font-size: 15px; outline: none; }
     .q-input:focus { border-color: #58a6ff; }
     .q-input::placeholder { color: #484f58; }
-    .go-btn { background: #58a6ff; color: #0d1117; border: none; border-radius: 5px; padding: 9px 18px; font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .go-btn { background: #58a6ff; color: #0d1117; border: none; border-radius: 5px; padding: 9px 18px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
     .go-btn:hover { opacity: .85; }
     .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-    .chip { background: #0d1117; border: 1px solid #21262d; color: #8b949e; border-radius: 4px; padding: 3px 8px; font-size: 10px; cursor: pointer; transition: all .15s; }
+    .chip { background: #0d1117; border: 1px solid #21262d; color: #8b949e; border-radius: 4px; padding: 3px 8px; font-size: 12px; cursor: pointer; transition: all .15s; }
     .chip:hover { border-color: #58a6ff; color: #58a6ff; }
     .chip.multi { border-color: #8b5cf6; color: #8b5cf6; }
     .chip.multi:hover { border-color: #a78bfa; color: #a78bfa; }
+
+    /* ── Think Log ── */
+    .think-panel { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; display: none; }
+    .think-panel.on { display: block; }
+    .think-header { font-size: 11px; color: #8b5cf6; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .think-header::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #8b5cf6; animation: pulse .7s infinite; }
+    .think-line { font-size: 13px; line-height: 2; color: #484f58; transition: color .4s; white-space: pre; }
+    .think-line.lit { color: #8b949e; }
+    .think-line.accent { color: #e6edf3; }
+    .think-line.ok { color: #3fb950; }
+    .think-line.warn { color: #d29922; }
+
+    /* ── Result Panel ── */
     .result-panel { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 16px; display: none; }
     .result-panel.on { display: block; }
-    .res-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 10px; color: #8b949e; flex-wrap: wrap; }
-    .res-tag { background: rgba(88,166,255,.1); color: #58a6ff; border: 1px solid rgba(88,166,255,.2); border-radius: 3px; padding: 2px 6px; font-size: 10px; }
-    .res-tag.multi { background: rgba(139,92,246,.1); color: #a78bfa; border-color: rgba(139,92,246,.25); }
-    .res-sep { color: #484f58; font-size: 10px; }
-    .res-body { font-size: 12px; line-height: 1.7; white-space: pre-wrap; margin-bottom: 12px; color: #8b949e; }
-    .copy-box { background: #0d1117; border: 1px solid #21262d; border-radius: 5px; padding: 12px; }
-    .copy-label { font-size: 9px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-    .copy-text { font-size: 11px; color: #3fb950; line-height: 1.7; white-space: pre-wrap; }
-    .copy-btn { margin-top: 8px; background: transparent; border: 1px solid #21262d; color: #8b949e; border-radius: 3px; padding: 4px 10px; font-family: inherit; font-size: 10px; cursor: pointer; }
+    .res-section-title { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+
+    /* mission brief */
+    .mission-grid { display: grid; gap: 8px; margin-bottom: 14px; }
+    .mission-card { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px 14px; }
+    .mission-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .mission-step { font-size: 11px; color: #484f58; }
+    .mission-agent-name { font-size: 13px; font-weight: 700; }
+    .mission-tag { font-size: 11px; border-radius: 3px; padding: 2px 6px; border: 1px solid; margin-left: auto; }
+    .mission-rows { display: grid; gap: 3px; }
+    .mission-row { display: flex; gap: 10px; font-size: 12px; }
+    .mission-key { color: #484f58; min-width: 52px; flex-shrink: 0; }
+    .mission-val { color: #8b949e; }
+    .mission-val.hi { color: #c9d1d9; }
+    .mission-val.tool { color: #58a6ff; font-size: 11px; }
+
+    /* prompt box */
+    .copy-box { background: #0d1117; border: 1px solid #21262d; border-radius: 5px; padding: 14px; margin-top: 14px; }
+    .copy-box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .copy-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+    .copy-btn { background: transparent; border: 1px solid #21262d; color: #8b949e; border-radius: 3px; padding: 4px 10px; font-family: inherit; font-size: 12px; cursor: pointer; }
     .copy-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+    .copy-text { font-size: 13px; color: #3fb950; line-height: 1.8; white-space: pre-wrap; }
   </style>
 </head>
 <body>
 
 <header>
   <div class="logo"></div>
-  <span>D&amp;I Agent Dispatch Center</span>
-  &nbsp;/&nbsp; Cadmus
+  <span>Prompt Cabinet</span>
+  &nbsp;/&nbsp; Agent Dispatch Center
 </header>
 
 <canvas id="officeCanvas" width="960" height="205"></canvas>
@@ -108,7 +137,7 @@
 <div class="dispatch-panel">
   <h2>Dispatch Console</h2>
   <div class="input-row">
-    <input class="q-input" id="qInput" type="text" placeholder="輸入問題，幕僚長自動判斷（可同時派多個幕僚）..." autocomplete="off"/>
+    <input class="q-input" id="qInput" type="text" placeholder="輸入問題，幕僚長自動判斷..." autocomplete="off"/>
     <button class="go-btn" onclick="dispatch()">Dispatch →</button>
   </div>
   <div class="chips">
@@ -117,40 +146,46 @@
     <span class="chip" onclick="setQ('DATAI-32 現在狀態怎樣？')">DATAI-32 狀態</span>
     <span class="chip" onclick="setQ('Finance 發票最近有什麼問題？')">Finance 發票</span>
     <span class="chip multi" onclick="setQ('DATAI-32 改完後要怎麼驗證 AIGC subpage 數字正確？')">★ 跨幕僚：DATAI-32 驗證</span>
-    <span class="chip multi" onclick="setQ('subpage_count 的定義是什麼，Jira 上有沒有相關工單？')">★ 跨幕僚：定義 + Jira</span>
+    <span class="chip multi" onclick="setQ('subpage_count 的定義是什麼，Jira 上有沒有相關工單？')">★ 跨幕僚：定義 + 工單</span>
   </div>
 </div>
 
+<!-- 幕僚長思考流 -->
+<div class="think-panel" id="thinkPanel">
+  <div class="think-header">幕僚長分析中</div>
+  <div id="thinkLines"></div>
+</div>
+
+<!-- 結果面板 -->
 <div class="result-panel" id="resultPanel">
-  <div class="res-header" id="resHeader"></div>
-  <div class="res-body" id="resBody"></div>
+  <div class="res-section-title">任務簡報</div>
+  <div class="mission-grid" id="missionGrid"></div>
   <div class="copy-box">
-    <div class="copy-label">貼到 WARP / Claude Code 的 Prompt</div>
+    <div class="copy-box-header">
+      <div class="copy-label">貼到 Claude Code 的 Prompt</div>
+      <button class="copy-btn" onclick="copyPrompt()">複製 Prompt</button>
+    </div>
     <div class="copy-text" id="promptText"></div>
-    <button class="copy-btn" onclick="copyPrompt()">複製 Prompt</button>
   </div>
 </div>
 
 <script>
-// ── Sprite loader (pixel-agents open source assets) ──
+// ══════════════════════════════════════════════
+//  Canvas / Sprite
+// ══════════════════════════════════════════════
 const BASE = 'https://raw.githubusercontent.com/pablodelucca/pixel-agents/main/webview-ui/public/assets/characters/';
 const SPRITE_IDX = { orchestrator:0, data:1, l2:2, finance:3, jira:4, github:5, slack:2, google:3 };
 const spriteImgs = {};
-
 Object.entries(SPRITE_IDX).forEach(([id, idx]) => {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload  = () => { spriteImgs[id] = img; };
+  const img = new Image(); img.crossOrigin = 'anonymous';
+  img.onload = () => { spriteImgs[id] = img; };
   img.src = BASE + 'char_' + idx + '.png';
 });
 
-// ── Canvas setup ──
 const canvas = document.getElementById('officeCanvas');
-const ctx    = canvas.getContext('2d');
+const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
-
-const W = 960, H = 205, FY = 158;
-const FW = 16, FH = 24, SC = 3; // frame size × scale
+const W = 960, H = 205, FY = 158, FW = 16, FH = 24, SC = 3;
 
 const CREW = [
   { id:'orchestrator', name:'大谷',   role:'幕僚長',   color:'#8b5cf6', cx:60  },
@@ -162,12 +197,9 @@ const CREW = [
   { id:'slack',        name:'劉嘉玲', role:'Slack',    color:'#a78bfa', cx:780 },
   { id:'google',       name:'Yumi',   role:'Google',   color:'#34d399', cx:900 },
 ];
-
-const modes = {};
-CREW.forEach(c => modes[c.id] = 'idle');
+const modes = {}; CREW.forEach(c => modes[c.id] = 'idle');
 let tick = 0;
 
-// ── Background ──
 function drawBg() {
   ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
   ctx.fillStyle = '#111820'; ctx.fillRect(0,FY,W,H-FY);
@@ -182,8 +214,6 @@ function drawBg() {
   });
   ctx.fillStyle = '#21262d'; ctx.fillRect(0,0,W,3);
 }
-
-// ── Desk ──
 function drawDesk(cx, color, mode) {
   ctx.fillStyle = '#1a202c';
   ctx.fillRect(cx-44,FY-28,6,28); ctx.fillRect(cx+38,FY-28,6,28);
@@ -203,147 +233,286 @@ function drawDesk(cx, color, mode) {
   }
   ctx.fillStyle = '#0a0e14'; ctx.fillRect(cx-3,FY-42,6,3);
 }
-
-// ── Character (sprite or fallback) ──
 function drawChar(cx, agentId, color, mode) {
   const img = spriteImgs[agentId];
-
-  // Frame selection
-  let fi = 1; // idle
+  let fi = 1;
   if (mode==='working')  fi = Math.floor(tick/18)%2===0 ? 3 : 4;
   if (mode==='done')     fi = [0,1,2,1][Math.floor(tick/10)%4];
   if (mode==='thinking') fi = Math.floor(tick/25)%2===0 ? 1 : 0;
-
-  // Y offset
   let yo = 0;
   if (mode==='idle')     yo = Math.floor(tick/40)%2===0 ? 0 : -1;
   if (mode==='done')     yo = -(Math.abs(Math.sin(tick*0.13))*8|0);
   if (mode==='thinking') yo = Math.floor(tick/22)%2===0 ? 0 : -1;
-
-  const dx = cx - (FW*SC/2);
-  const dy = FY - FH*SC + yo;
-
+  const dx = cx-(FW*SC/2), dy = FY-FH*SC+yo;
   if (img) {
-    // Draw sprite from sheet: 7 frames wide, direction row 0 = down (facing viewer)
     ctx.drawImage(img, fi*FW, 0, FW, FH, dx, dy, FW*SC, FH*SC);
   } else {
-    // Simple fallback block character
-    ctx.fillStyle = '#f2c9a0'; ctx.fillRect(dx+14, dy+2, 18, 18);
-    ctx.fillStyle = color;     ctx.fillRect(dx+10, dy+20, 26, 28);
-    ctx.fillStyle = '#1e3a5f'; ctx.fillRect(dx+12, dy+48, 10, 18);
-    ctx.fillRect(dx+22, dy+48, 10, 18);
+    ctx.fillStyle='#f2c9a0'; ctx.fillRect(dx+14,dy+2,18,18);
+    ctx.fillStyle=color;     ctx.fillRect(dx+10,dy+20,26,28);
+    ctx.fillStyle='#1e3a5f'; ctx.fillRect(dx+12,dy+48,10,18); ctx.fillRect(dx+22,dy+48,10,18);
   }
-
-  // Thinking bubble
   if (mode==='thinking') {
-    ctx.fillStyle = '#d29922';
-    ctx.globalAlpha = 0.5 + Math.sin(tick*0.12)*0.4;
+    ctx.fillStyle='#d29922'; ctx.globalAlpha=0.5+Math.sin(tick*0.12)*0.4;
     ctx.fillRect(cx+12,dy-3,3,3); ctx.fillRect(cx+17,dy-9,5,5); ctx.fillRect(cx+24,dy-17,9,9);
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha=1;
   }
-
-  // Done sparkles
   if (mode==='done') {
-    const t = tick*0.14;
-    ctx.fillStyle = '#ffd700'; ctx.globalAlpha = 0.85;
-    ctx.fillRect((cx+22+Math.sin(t)*9)|0,   (dy+6+Math.cos(t)*6)|0,   4,4);
-    ctx.fillRect((cx-26+Math.sin(t+2)*9)|0, (dy+14+Math.cos(t+2)*6)|0,4,4);
-    ctx.fillRect((cx+18+Math.sin(t+4)*7)|0, (dy+2+Math.cos(t+4)*5)|0, 3,3);
-    ctx.globalAlpha = 1;
+    const t=tick*0.14; ctx.fillStyle='#ffd700'; ctx.globalAlpha=0.85;
+    ctx.fillRect((cx+22+Math.sin(t)*9)|0,(dy+6+Math.cos(t)*6)|0,4,4);
+    ctx.fillRect((cx-26+Math.sin(t+2)*9)|0,(dy+14+Math.cos(t+2)*6)|0,4,4);
+    ctx.fillRect((cx+18+Math.sin(t+4)*7)|0,(dy+2+Math.cos(t+4)*5)|0,3,3);
+    ctx.globalAlpha=1;
   }
 }
-
-// ── Label ──
 function drawLabel(cx, name, role, color, mode) {
-  ctx.textAlign = 'center';
-
-  // Name — bold, high contrast
-  ctx.font = 'bold 11px monospace';
-  ctx.fillStyle = mode==='idle' ? '#c9d1d9' : color;
-  ctx.fillText(name, cx, FY+14);
-
-  // Role — smaller, always visible
-  ctx.font = '9px monospace';
-  ctx.fillStyle = mode==='idle' ? '#6e7681' : color + 'cc';
-  ctx.fillText(role, cx, FY+25);
-
-  // Status
-  ctx.font = '9px monospace';
+  ctx.textAlign='center';
+  ctx.font='bold 13px monospace';
+  ctx.fillStyle=mode==='idle'?'#c9d1d9':color;
+  ctx.fillText(name,cx,FY+16);
+  ctx.font='11px monospace';
+  ctx.fillStyle=mode==='idle'?'#6e7681':color+'cc';
+  ctx.fillText(role,cx,FY+29);
+  ctx.font='11px monospace';
   if (mode!=='idle') {
-    const map = {thinking:'◐ 分析中', working:'● 執行中', done:'✓ 完成'};
-    ctx.fillStyle = mode==='done' ? '#3fb950' : mode==='thinking' ? '#d29922' : color;
-    ctx.fillText(map[mode]||'', cx, FY+35);
-  } else {
-    ctx.fillStyle = '#8b949e';
-    ctx.fillText('待命', cx, FY+35);
-  }
+    const map={thinking:'◐ 分析中',working:'● 執行中',done:'✓ 完成'};
+    ctx.fillStyle=mode==='done'?'#3fb950':mode==='thinking'?'#d29922':color;
+    ctx.fillText(map[mode]||'',cx,FY+42);
+  } else { ctx.fillStyle='#8b949e'; ctx.fillText('待命',cx,FY+42); }
 }
-
-// ── Render loop ──
 function render() {
-  tick++;
-  ctx.clearRect(0,0,W,H);
-  drawBg();
-  CREW.forEach(c => {
-    drawDesk(c.cx, c.color, modes[c.id]);
-    drawChar(c.cx, c.id, c.color, modes[c.id]);
-    drawLabel(c.cx, c.name, c.role, c.color, modes[c.id]);
-  });
+  tick++; ctx.clearRect(0,0,W,H); drawBg();
+  CREW.forEach(c => { drawDesk(c.cx,c.color,modes[c.id]); drawChar(c.cx,c.id,c.color,modes[c.id]); drawLabel(c.cx,c.name,c.role,c.color,modes[c.id]); });
   requestAnimationFrame(render);
 }
 render();
 
-// ── Agent definitions ──
+// ══════════════════════════════════════════════
+//  Agent 定義
+// ══════════════════════════════════════════════
 const AGENTS = {
   data: {
-    keywords: ['sql','databricks','table','查詢','數據','資料','aigc','bulldozer','ctr','metric','pipeline','seo','aeo','ga','數字','幾個','多少','分析','流量','subpage','view'],
-    name:'資料幕僚', tag:'Data Agent',
-    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/data.md\n以「資料幕僚」角色回答：' + q
+    file: 'data', name: '安娜', fullName: '資料幕僚（安娜）', tag: 'Data Agent', color: '#3b82f6',
+    tool: 'mcp__databricks-prod__execute_sql_read_only',
+    // entity 關鍵字：特定的系統名稱、table、指標
+    entities: ['sql','databricks','table','aigc','bulldozer','subpage','view_logs','api_logs','silver','gold','pipeline','seo','aeo','ga4'],
+    // intent 關鍵字：「做什麼動作」
+    intents: ['查詢','數據','數字','幾個','多少','流量','趨勢','統計','ctr','count','metric'],
   },
   l2: {
-    keywords: ['description','定義','描述','指標','caveat','計算','欄位','schema','寫','撰寫','怎麼算','define'],
-    name:'L2描述幕僚', tag:'L2 Description',
-    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/l2-description.md\n以「L2描述幕僚」角色回答：' + q
+    file: 'l2-description', name: '安海', fullName: 'L2描述幕僚（安海）', tag: 'L2 Desc', color: '#10b981',
+    tool: null,
+    entities: ['description','caveat','schema','欄位','define','指標定義'],
+    intents: ['寫','撰寫','定義','描述','怎麼算','業務含義','什麼意思'],
   },
   finance: {
-    keywords: ['finance','發票','invoice','flora','billing','帳','金額','cost','anomaly'],
-    name:'Finance幕僚', tag:'Finance Agent',
-    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/finance.md\n以「Finance幕僚」角色回答：' + q
+    file: 'finance', name: '達利恩', fullName: 'Finance幕僚（達利恩）', tag: 'Finance', color: '#f59e0b',
+    tool: 'mcp__postgres-billing__query',
+    entities: ['finance','發票','invoice','billing','flora','cost'],
+    intents: ['帳','金額','anomaly','對帳','核對'],
   },
   jira: {
-    keywords: ['jira','datai','工單','ticket','任務','進度','deploy','merge','checklist','驗證'],
-    name:'JJ', tag:'Jira Agent',
-    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/jira.md\n以「Jira幕僚」角色回答：' + q
+    file: 'jira', name: 'JJ', fullName: 'Jira幕僚（JJ）', tag: 'Jira', color: '#ec4899',
+    tool: 'mcp__claude_ai_Atlassian__getJiraIssue',
+    entities: ['jira','datai','工單','ticket'],
+    intents: ['狀態','進度','待辦','deploy後','merge後','checklist'],
   },
   github: {
-    keywords: ['github','pr','pull request','repo','程式碼','code','branch','commit','diff','檔案','function','sql file','codebase','merge','review'],
-    name:'窩賈', tag:'GitHub Agent',
-    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/github.md\n以「GitHub幕僚」角色回答：' + q
+    file: 'github', name: '窩賈', fullName: 'GitHub幕僚（窩賈）', tag: 'GitHub', color: '#38bdf8',
+    tool: 'mcp__github__github_list_pull_requests',
+    entities: ['github','repo','branch','commit','diff','codebase','sql file'],
+    intents: ['pr','pull request','程式碼','code','找函式','在哪個檔案','review'],
   },
   slack: {
-    keywords: ['slack','頻道','channel','訊息','message','討論','誰說','有沒有說','聊天'],
-    name:'劉嘉玲', tag:'Slack Agent',
-    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/slack.md\n以「Slack幕僚」角色回答：' + q
+    file: 'slack', name: '劉嘉玲', fullName: 'Slack幕僚（劉嘉玲）', tag: 'Slack', color: '#a78bfa',
+    tool: 'mcp__claude_ai_Slack__slack_search_public_and_private',
+    entities: ['slack','頻道','channel'],
+    intents: ['訊息','討論','誰說','有沒有說','聊','有沒有提到'],
   },
   google: {
-    keywords: ['google','ga4','gsc','search console','organic','impression','keyword','關鍵字','搜尋排名','ctr','click','ga report','analytics report'],
-    name:'Yumi', tag:'Google Agent',
-    buildPrompt: q => '請讀取 ~/Documents/dev/personal/di-agent/agents/google.md\n以「Google幕僚」角色回答：' + q
-  }
+    file: 'google', name: 'Yumi', fullName: 'Google幕僚（Yumi）', tag: 'Google', color: '#34d399',
+    tool: 'mcp__google-analytics__run_report',
+    entities: ['ga4','gsc','google analytics','search console','organic','keyword','關鍵字'],
+    intents: ['impression','click','搜尋排名','索引','quick win','ga report'],
+  },
 };
 
-// ── Dispatch ──
-function detectAgents(q) {
-  const ql = q.toLowerCase();
-  const scored = Object.entries(AGENTS)
-    .map(([k,a]) => ({key:k, score: a.keywords.filter(w=>ql.includes(w)).length}))
-    .filter(x => x.score > 0)
-    .sort((a,b) => b.score - a.score);
-  if (!scored.length) return ['data'];
-  if (scored.length >= 2 && scored[1].score >= 1) return [scored[0].key, scored[1].key];
-  return [scored[0].key];
+// ══════════════════════════════════════════════
+//  分析引擎
+// ══════════════════════════════════════════════
+
+// 抽取命名實體（工單號、PR號、table名）
+function extractNamedEntities(q) {
+  const tickets = (q.match(/datai-\d+/gi) || []).map(s => s.toUpperCase());
+  const prs     = (q.match(/pr#?\d+/gi) || []).map(s => s.toUpperCase().replace('PR','PR#'));
+  const tables  = (q.match(/\b\w+_(?:silver|gold|billing|logs|daily|view)\b/gi) || []);
+  return { tickets, prs, tables };
 }
 
+// 偵測主要意圖
+function detectIntent(q) {
+  const ql = q.toLowerCase();
+  const map = [
+    { key:'query',   label:'數據查詢',  words:['多少','幾個','查','有幾','統計','ctr','count','數字','趨勢','看一下'] },
+    { key:'write',   label:'文件撰寫',  words:['寫','撰寫','幫我寫','怎麼寫','草稿'] },
+    { key:'track',   label:'進度追蹤',  words:['狀態','進度','現在怎樣','完成了嗎','待辦','done了嗎'] },
+    { key:'search',  label:'搜尋查找',  words:['找','搜','有沒有說','討論過','誰說','在哪個','哪個檔案'] },
+    { key:'debug',   label:'問題排查',  words:['為什麼','bug','不對','錯誤','異常','怎麼修'] },
+    { key:'plan',    label:'分析建議',  words:['怎麼做','建議','計畫','優先','策略','該怎麼','下一步'] },
+    { key:'verify',  label:'驗證確認',  words:['驗證','確認','正確嗎','對不對','對得上'] },
+  ];
+  let best = { key:'query', label:'數據查詢', score:0 };
+  for (const m of map) {
+    const score = m.words.filter(w => ql.includes(w)).length;
+    if (score > best.score) best = { key:m.key, label:m.label, score };
+  }
+  return best;
+}
+
+// 核心 dispatch 邏輯（intent + entity 分離計分）
+function detectAgents(q, entities) {
+  const ql = q.toLowerCase();
+
+  // 特殊規則 1：偵測到工單號 → Jira 一定進來
+  //   如果同時有資料相關字 → Jira 先、資料幕僚後（驗證順序）
+  if (entities.tickets.length > 0) {
+    const hasDataWord = AGENTS.data.entities.some(w => ql.includes(w))
+                     || AGENTS.data.intents.some(w => ql.includes(w));
+    const hasVerify = ['驗證','確認','正確','對不對','確保'].some(w => ql.includes(w));
+    if (hasDataWord || hasVerify) return ['jira','data'];
+    return ['jira'];
+  }
+
+  // 特殊規則 2：偵測到 PR 號 → GitHub
+  if (entities.prs.length > 0) return ['github'];
+
+  // 一般計分：entity 命中 ×2，intent 命中 ×1
+  const scored = Object.entries(AGENTS).map(([k, a]) => {
+    const eScore = a.entities.filter(w => ql.includes(w)).length * 2;
+    const iScore = a.intents.filter(w => ql.includes(w)).length;
+    return { key:k, score: eScore + iScore };
+  }).filter(x => x.score > 0).sort((a,b) => b.score - a.score);
+
+  if (!scored.length) return ['data'];
+
+  // 跨域判斷：第二名 entity 命中 ≥ 1 → 同時派
+  const top = scored[0];
+  if (scored.length >= 2) {
+    const second = scored[1];
+    const secondEntity = AGENTS[second.key].entities.filter(w => ql.includes(w)).length;
+    if (secondEntity >= 1 && second.score >= 2) return [top.key, second.key];
+  }
+  return [top.key];
+}
+
+// 生成思考流的文字行
+function buildThinkLines(q, intent, entities, agentKeys) {
+  const lines = [];
+  const display = q.length > 40 ? q.slice(0,40)+'…' : q;
+  lines.push({ text: `› 輸入：「${display}」`, cls: 'lit' });
+  lines.push({ text: `› 意圖偵測：${intent.label}`, cls: 'accent' });
+
+  if (entities.tickets.length)
+    lines.push({ text: `› 工單實體：${entities.tickets.join(', ')} → 路由至 Jira幕僚`, cls: 'warn' });
+  if (entities.prs.length)
+    lines.push({ text: `› PR 實體：${entities.prs.join(', ')} → 路由至 GitHub幕僚`, cls: 'warn' });
+  if (entities.tables.length)
+    lines.push({ text: `› Table 實體：${entities.tables.join(', ')}`, cls: 'lit' });
+
+  if (agentKeys.length === 1) {
+    lines.push({ text: `› 單一領域 → 派發 ${AGENTS[agentKeys[0]].fullName}`, cls: 'ok' });
+  } else {
+    lines.push({ text: `› 跨域問題 → 序列派發 ${agentKeys.map(k=>AGENTS[k].name).join(' → ')}`, cls: 'ok' });
+    lines.push({ text: `› 建立執行順序：Step 1 先取狀態，Step 2 驗證數據`, cls: 'lit' });
+  }
+  lines.push({ text: `› 生成任務簡報 + 注入工具提示…`, cls: 'lit' });
+  return lines;
+}
+
+// 生成給 Claude Code 的 prompt（有幕僚長簡報）
+function buildPrompt(agentKey, q, intent, entities, agentKeys) {
+  const a = AGENTS[agentKey];
+  const isMulti = agentKeys.length > 1;
+  const stepNum = isMulti ? agentKeys.indexOf(agentKey) + 1 : null;
+  const stepTotal = agentKeys.length;
+
+  const entitySummary = [
+    ...entities.tickets,
+    ...entities.prs,
+    ...entities.tables,
+  ].join('、') || '—';
+
+  const briefLines = [
+    `┌─ 幕僚長任務簡報`,
+    `│  原始問題：${q}`,
+    `│  意圖：${intent.label}`,
+    `│  實體：${entitySummary}`,
+    isMulti ? `│  協作順序：Step ${stepNum} / ${stepTotal}` : null,
+    isMulti && stepNum > 1 ? `│  前提：請先確認上一步（Step ${stepNum-1}）的輸出再繼續` : null,
+    a.tool ? `│  建議工具：${a.tool}` : null,
+    `└─────────────────────────────────`,
+  ].filter(Boolean).join('\n');
+
+  // 針對意圖補充具體指示
+  const taskInstruction = buildTaskInstruction(agentKey, q, intent, entities, isMulti, stepNum, stepTotal);
+
+  return [
+    `請讀取 ~/Documents/dev/personal/di-agent/agents/${a.file}.md`,
+    ``,
+    briefLines,
+    ``,
+    `以「${a.fullName}」角色執行：`,
+    taskInstruction,
+  ].join('\n');
+}
+
+// 根據 intent + agent 組合生成更精確的任務指示
+function buildTaskInstruction(agentKey, q, intent, entities, isMulti, stepNum, stepTotal) {
+  const ql = q.toLowerCase();
+
+  if (agentKey === 'jira') {
+    if (entities.tickets.length) {
+      const ticketList = entities.tickets.join('、');
+      const next = isMulti ? `\n查詢後，將狀態與待辦步驟整理成清單，供 Step ${stepNum+1} 繼續使用。` : '';
+      return `查詢 ${ticketList} 的目前狀態、剩餘待辦與 deploy 步驟。${next}`;
+    }
+    return `${q}\n請用 JQL 查詢相關工單並整理進度。`;
+  }
+
+  if (agentKey === 'data') {
+    if (isMulti && stepNum > 1) {
+      return `基於 Step 1 的工單狀態，執行數據驗證：\n${q}\n請使用 read-only SQL 查詢，並對比預期結果說明是否正確。`;
+    }
+    if (intent.key === 'query') {
+      return `${q}\n請使用 SQL 查詢並說明：來源 table、時間範圍、數字解讀。`;
+    }
+    return q;
+  }
+
+  if (agentKey === 'l2') {
+    return `${q}\n請依照 Tim 的 description 格式撰寫，包含：定義、計算方式、業務含義、Caveats。`;
+  }
+
+  if (agentKey === 'github') {
+    if (entities.prs.length) {
+      return `查詢 ${entities.prs.join('、')} 的狀態、diff 重點與 review 意見。`;
+    }
+    return `${q}\n請搜尋相關程式碼並說明檔案位置。`;
+  }
+
+  if (agentKey === 'slack') {
+    return `${q}\n請跨頻道搜尋，整理相關討論的時間與結論。`;
+  }
+
+  if (agentKey === 'google') {
+    return `${q}\n請直接呼叫 GA4/GSC API 取得原始數據，並說明時間範圍與維度設定。`;
+  }
+
+  return q;
+}
+
+// ══════════════════════════════════════════════
+//  UI 控制
+// ══════════════════════════════════════════════
 function setUI(id, dotCls, label) {
   const d = document.getElementById('dot-'+id);
   const l = document.getElementById('lbl-'+id);
@@ -356,68 +525,137 @@ function setUI(id, dotCls, label) {
     if (dotCls==='think') c.classList.add('busy');
   }
 }
-
 function resetAll() {
   CREW.forEach(c => { modes[c.id]='idle'; setUI(c.id,'idle','待命'); });
 }
 
+// 思考流動畫（逐行點亮）
+function animateThinkLines(lines, cb) {
+  const container = document.getElementById('thinkLines');
+  container.textContent = '';
+  document.getElementById('thinkPanel').classList.add('on');
+  document.getElementById('resultPanel').classList.remove('on');
+
+  lines.forEach((l, i) => {
+    const el = document.createElement('div');
+    el.className = 'think-line';
+    el.textContent = l.text;
+    container.appendChild(el);
+    setTimeout(() => el.classList.add(l.cls || 'lit'), i * 160);
+  });
+
+  setTimeout(cb, lines.length * 160 + 300);
+}
+
+// 任務簡報卡片
+function buildMissionCard(agentKey, q, intent, entities, agentKeys, stepIdx) {
+  const a = AGENTS[agentKey];
+  const isMulti = agentKeys.length > 1;
+  const card = document.createElement('div');
+  card.className = 'mission-card';
+
+  const header = document.createElement('div');
+  header.className = 'mission-card-header';
+
+  if (isMulti) {
+    const step = document.createElement('span');
+    step.className = 'mission-step';
+    step.textContent = `Step ${stepIdx + 1} / ${agentKeys.length}`;
+    header.appendChild(step);
+  }
+
+  const nameEl = document.createElement('span');
+  nameEl.className = 'mission-agent-name';
+  nameEl.style.color = a.color;
+  nameEl.textContent = a.fullName;
+  header.appendChild(nameEl);
+
+  const tag = document.createElement('span');
+  tag.className = 'mission-tag';
+  tag.style.color = a.color;
+  tag.style.borderColor = a.color + '44';
+  tag.textContent = a.tag;
+  header.appendChild(tag);
+
+  card.appendChild(header);
+
+  const rows = document.createElement('div');
+  rows.className = 'mission-rows';
+
+  const addRow = (key, val, cls='') => {
+    const row = document.createElement('div'); row.className = 'mission-row';
+    const k = document.createElement('span'); k.className = 'mission-key'; k.textContent = key;
+    const v = document.createElement('span'); v.className = 'mission-val ' + cls; v.textContent = val;
+    row.appendChild(k); row.appendChild(v); rows.appendChild(row);
+  };
+
+  addRow('意圖', intent.label, 'hi');
+
+  const namedEntities = [...entities.tickets, ...entities.prs, ...entities.tables];
+  if (namedEntities.length) addRow('實體', namedEntities.join('、'), 'hi');
+
+  if (a.tool) addRow('工具', a.tool, 'tool');
+
+  if (isMulti && stepIdx > 0)
+    addRow('前提', `Step ${stepIdx} 完成後執行`);
+
+  card.appendChild(rows);
+  return card;
+}
+
+// 主要結果顯示
+function showResult(q, agentKeys, intent, entities) {
+  document.getElementById('thinkPanel').classList.remove('on');
+  document.getElementById('resultPanel').classList.add('on');
+
+  const grid = document.getElementById('missionGrid');
+  grid.textContent = '';
+  agentKeys.forEach((k, i) => {
+    grid.appendChild(buildMissionCard(k, q, intent, entities, agentKeys, i));
+  });
+
+  const isMulti = agentKeys.length > 1;
+  const fullPrompt = isMulti
+    ? agentKeys.map((k, i) =>
+        `# Step ${i+1}：${AGENTS[k].fullName}\n\n` + buildPrompt(k, q, intent, entities, agentKeys)
+      ).join('\n\n' + '─'.repeat(60) + '\n\n')
+    : buildPrompt(agentKeys[0], q, intent, entities, agentKeys);
+
+  document.getElementById('promptText').textContent = fullPrompt;
+}
+
+// ══════════════════════════════════════════════
+//  Dispatch 主流程
+// ══════════════════════════════════════════════
 function dispatch() {
   const q = document.getElementById('qInput').value.trim();
   if (!q) return;
   resetAll();
 
   modes.orchestrator = 'thinking';
-  setUI('orchestrator','think','分析中...');
+  setUI('orchestrator', 'think', '分析中...');
 
-  setTimeout(() => {
-    const keys = detectAgents(q);
-    const isMulti = keys.length > 1;
+  const entities = extractNamedEntities(q.toLowerCase());
+  const intent   = detectIntent(q);
+  const agentKeys = detectAgents(q, entities);
+  const thinkLines = buildThinkLines(q, intent, entities, agentKeys);
 
+  animateThinkLines(thinkLines, () => {
+    const isMulti = agentKeys.length > 1;
     modes.orchestrator = 'done';
-    setUI('orchestrator','done', isMulti ? ('→ '+keys.length+'個幕僚') : ('→ '+AGENTS[keys[0]].name));
+    setUI('orchestrator', 'done', isMulti ? `→ ${agentKeys.length}個幕僚` : `→ ${AGENTS[agentKeys[0]].name}`);
 
-    keys.forEach((key,i) => setTimeout(() => {
+    agentKeys.forEach((key, i) => setTimeout(() => {
       modes[key] = 'working';
-      setUI(key,'work','處理中');
-    }, i*250));
+      setUI(key, 'work', '處理中');
+    }, i * 300));
 
     setTimeout(() => {
-      keys.forEach(key => { modes[key]='done'; setUI(key,'done','完成'); });
-      showResult(q, keys.map(k=>AGENTS[k]), isMulti);
-      setTimeout(resetAll, 4000);
-    }, 2000 + keys.length*250);
-  }, 900);
-}
-
-function showResult(q, agents, isMulti) {
-  document.getElementById('resultPanel').classList.add('on');
-
-  // Build header using DOM (no innerHTML with user data)
-  const header = document.getElementById('resHeader');
-  header.textContent = '';
-  agents.forEach((a, i) => {
-    if (i > 0) {
-      const sep = document.createElement('span');
-      sep.className = 'res-sep'; sep.textContent = ' + ';
-      header.appendChild(sep);
-    }
-    const nameEl = document.createElement('span');
-    nameEl.textContent = a.name;
-    header.appendChild(nameEl);
-
-    const tag = document.createElement('span');
-    tag.className = 'res-tag' + (isMulti ? ' multi' : '');
-    tag.textContent = a.tag;
-    header.appendChild(tag);
+      agentKeys.forEach(key => { modes[key]='done'; setUI(key,'done','完成'); });
+      showResult(q, agentKeys, intent, entities);
+      setTimeout(resetAll, 4500);
+    }, 1800 + agentKeys.length * 300);
   });
-
-  document.getElementById('resBody').textContent = isMulti
-    ? '[幕僚長] 這個問題跨越 ' + agents.length + ' 個領域，同時派發。\n以下 prompt 已整合，貼到 Claude Code 執行：'
-    : '[幕僚長] 這是「' + agents[0].name + '」的工作範疇。\n以下 prompt 請貼到 WARP / Claude Code 執行：';
-
-  document.getElementById('promptText').textContent = isMulti
-    ? agents.map((a,i) => '# Step '+(i+1)+'：'+a.name+'\n'+a.buildPrompt(q)).join('\n\n---\n\n')
-    : agents[0].buildPrompt(q);
 }
 
 function copyPrompt() {
