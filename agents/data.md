@@ -33,7 +33,7 @@
 - 跨域 join 相關 pipeline
 
 ### 進行中工作（DATAI 工單）
-- **DATAI-32**: `aigc_daily_billing` MV — PR#38 等 review，merge 後需 `databricks bundle deploy -t prod`
+- **DATAI-32**: metric views fix — PR#41 open，修正 `subpage_count` / `new_subpages` 只計算 view_count > 0 的頁面，待 Tim review，merge 後需 `databricks bundle deploy -t prod`
 - **DATAI-33**: GA4 backfill — 歷史資料無法回補，3/7 後 streaming export 正常（0.2~1.7% 遺漏率）
 
 ### SEO/AEO Pipeline（Cadmus Q2任務）

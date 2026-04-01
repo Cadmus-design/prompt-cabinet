@@ -20,7 +20,10 @@
 | micro-wafmgmt | WAF 規則管理 |
 
 ## 已知 PR
-- **PR#38** (feat/aigc-daily-billing) — 已 Close，方向有誤
+- **PR#35** (remove-elapsed-time) — Merged 3/20，移除 elapsed_time_ms
+- **PR#37** (add-aigc-skills-and-metrics-notes) — Merged 3/24，deploy skills + URL inflation data quality notes
+- **PR#38** (feat/aigc-daily-billing) — Closed（未 merge），Gold table 方向錯誤，已放棄
+- **PR#41** (fix/aigc-billing-metric-views) — Open，修正 subpage_count / new_subpages filter logic，待 Tim review
 
 ## 常見任務
 - 查某個 PR 的狀態與 diff
