@@ -79,6 +79,28 @@
     .copy-btn { background: transparent; border: 1px solid #21262d; color: #8b949e; border-radius: 3px; padding: 4px 10px; font-family: inherit; font-size: 12px; cursor: pointer; }
     .copy-btn:hover { border-color: #58a6ff; color: #58a6ff; }
     .copy-text { font-size: 13px; color: #3fb950; line-height: 1.8; white-space: pre-wrap; }
+
+    /* API key panel */
+    .apikey-panel { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 12px 14px; margin-bottom: 12px; }
+    .apikey-providers { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .provider-btn { background: #161b22; border: 1px solid #30363d; color: #484f58; border-radius: 4px; padding: 4px 12px; font-family: inherit; font-size: 12px; cursor: pointer; transition: all .15s; }
+    .provider-btn:hover { border-color: #58a6ff; color: #8b949e; }
+    .provider-btn.active { border-color: #58a6ff; color: #58a6ff; background: rgba(88,166,255,.08); }
+    .apikey-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .apikey-label { font-size: 11px; color: #484f58; white-space: nowrap; min-width: 70px; }
+    .apikey-input { flex: 1; min-width: 200px; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 5px 10px; color: #8b949e; font-family: inherit; font-size: 12px; outline: none; }
+    .apikey-input:focus { border-color: #58a6ff; color: #e6edf3; }
+    .apikey-save { background: transparent; border: 1px solid #30363d; color: #8b949e; border-radius: 4px; padding: 5px 10px; font-family: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    .apikey-save:hover { border-color: #3fb950; color: #3fb950; }
+    .apikey-status { font-size: 11px; margin-top: 6px; }
+    .apikey-status.ok  { color: #3fb950; }
+    .apikey-status.off { color: #484f58; }
+
+    /* LLM response box */
+    .llm-box { background: #0d1117; border: 1px solid #21262d; border-radius: 5px; padding: 14px; margin-top: 14px; display: none; }
+    .llm-box.on { display: block; }
+    .llm-box-header { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .llm-text { font-size: 13px; color: #c9d1d9; line-height: 1.8; white-space: pre-wrap; }
   </style>
 </head>
 <body>
@@ -134,6 +156,20 @@
   </div>
 </div>
 
+<div class="apikey-panel">
+  <div class="apikey-providers">
+    <button class="provider-btn active" id="btn-gemini"    onclick="selectProvider('gemini')">Gemini</button>
+    <button class="provider-btn"        id="btn-claude"    onclick="selectProvider('claude')">Claude</button>
+    <button class="provider-btn"        id="btn-openai"    onclick="selectProvider('openai')">OpenAI</button>
+  </div>
+  <div class="apikey-row">
+    <span class="apikey-label" id="apikeyLabel">Gemini Key</span>
+    <input class="apikey-input" id="apikeyInput" type="password" placeholder="AIza..." autocomplete="off"/>
+    <button class="apikey-save" onclick="saveKey()">儲存</button>
+  </div>
+  <div class="apikey-status off" id="apikeyStatus">未設定 — 使用 rule-based 路由</div>
+</div>
+
 <div class="dispatch-panel">
   <h2>Dispatch Console</h2>
   <div class="input-row">
@@ -160,6 +196,10 @@
 <div class="result-panel" id="resultPanel">
   <div class="res-section-title">任務簡報</div>
   <div class="mission-grid" id="missionGrid"></div>
+  <div class="llm-box" id="llmBox">
+    <div class="llm-box-header">Gemini 回覆</div>
+    <div class="llm-text" id="llmText"></div>
+  </div>
   <div class="copy-box">
     <div class="copy-box-header">
       <div class="copy-label">貼到 Claude Code 的 Prompt</div>
@@ -467,6 +507,7 @@ function buildPrompt(agentKey, q, intent, entities, agentKeys) {
 
 // 根據 intent + agent 組合生成更精確的任務指示
 function buildTaskInstruction(agentKey, q, intent, entities, isMulti, stepNum, stepTotal) {
+  if (window._geminiTaskInstruction) return window._geminiTaskInstruction;
   const ql = q.toLowerCase();
 
   if (agentKey === 'jira') {
@@ -625,37 +666,226 @@ function showResult(q, agentKeys, intent, entities) {
 }
 
 // ══════════════════════════════════════════════
+//  API Key 管理（多 provider）
+// ══════════════════════════════════════════════
+const PROVIDERS = {
+  gemini: { label: 'Gemini Key',  placeholder: 'AIza...',      storageKey: 'gemini_key' },
+  claude: { label: 'Claude Key',  placeholder: 'sk-ant-...',   storageKey: 'claude_key' },
+  openai: { label: 'OpenAI Key',  placeholder: 'sk-...',       storageKey: 'openai_key' },
+};
+let activeProvider = localStorage.getItem('active_provider') || 'gemini';
+
+function selectProvider(p) {
+  activeProvider = p;
+  localStorage.setItem('active_provider', p);
+  Object.keys(PROVIDERS).forEach(k => {
+    document.getElementById('btn-' + k).classList.toggle('active', k === p);
+  });
+  const cfg = PROVIDERS[p];
+  document.getElementById('apikeyLabel').textContent = cfg.label;
+  const input = document.getElementById('apikeyInput');
+  input.placeholder = cfg.placeholder;
+  input.value = localStorage.getItem(cfg.storageKey) || '';
+  updateKeyStatus();
+}
+
+function saveKey() {
+  const k = document.getElementById('apikeyInput').value.trim();
+  if (k) { localStorage.setItem(PROVIDERS[activeProvider].storageKey, k); updateKeyStatus(); }
+}
+
+function updateKeyStatus() {
+  const k = localStorage.getItem(PROVIDERS[activeProvider].storageKey);
+  const el = document.getElementById('apikeyStatus');
+  const names = { gemini: 'Gemini 2.0 Flash', claude: 'Claude Haiku', openai: 'GPT-4o mini' };
+  if (k) { el.textContent = `${names[activeProvider]} 已啟用`; el.className = 'apikey-status ok'; }
+  else   { el.textContent = '未設定 — 使用 rule-based 路由'; el.className = 'apikey-status off'; }
+}
+
+// 初始化
+selectProvider(activeProvider);
+
+// ══════════════════════════════════════════════
+//  LLM API（Gemini / Claude / OpenAI）
+// ══════════════════════════════════════════════
+function buildSystemPrompt() {
+  const agentList = Object.entries(AGENTS).map(([k,a]) =>
+    `- ${k} (${a.name}): entities=[${a.entities.join(',')}] intents=[${a.intents.join(',')}]`
+  ).join('\n');
+  return `你是一個 AI 幕僚系統的路由器。根據用戶問題，決定派給哪個幕僚並生成任務指示。
+
+可用幕僚：
+${agentList}
+- orchestrator (大谷): 幕僚長，不直接處理任務
+
+規則：
+1. 偵測到 DATAI-數字 → 一定包含 jira
+2. 偵測到 PR#數字 → 一定包含 github
+3. 跨域問題可回傳多個 key（最多2個）
+4. 沒有明確領域 → 回傳 data
+
+回傳 JSON（只回 JSON，不加任何說明）：
+{
+  "agentKeys": ["key1"],
+  "intent": {"key": "query", "label": "數據查詢"},
+  "entities": {"tickets": [], "prs": [], "tables": []},
+  "thinkSummary": "一句話說明路由邏輯",
+  "taskInstruction": "給幕僚的具體任務指示"
+}`;
+}
+
+function parseJSON(text) {
+  const json = text.match(/\{[\s\S]*\}/)?.[0];
+  if (!json) throw new Error('無法解析 LLM 回應');
+  return JSON.parse(json);
+}
+
+async function callLLM(q) {
+  const provider = activeProvider;
+  const key = localStorage.getItem(PROVIDERS[provider].storageKey);
+  const system = buildSystemPrompt();
+  const userMsg = '用戶問題：' + q;
+
+  if (provider === 'gemini') {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: system + '\n\n' + userMsg }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 512 } }) }
+    );
+    if (!res.ok) throw new Error(`Gemini ${res.status}`);
+    const data = await res.json();
+    return parseJSON(data.candidates?.[0]?.content?.parts?.[0]?.text || '');
+  }
+
+  if (provider === 'claude') {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key,
+                 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 512,
+        system, messages: [{ role: 'user', content: userMsg }] })
+    });
+    if (!res.ok) throw new Error(`Claude ${res.status}`);
+    const data = await res.json();
+    return parseJSON(data.content?.[0]?.text || '');
+  }
+
+  if (provider === 'openai') {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.1, max_tokens: 512,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: userMsg }] })
+    });
+    if (!res.ok) throw new Error(`OpenAI ${res.status}`);
+    const data = await res.json();
+    return parseJSON(data.choices?.[0]?.message?.content || '');
+  }
+
+  throw new Error('未知 provider');
+}
+
+// ══════════════════════════════════════════════
 //  Dispatch 主流程
 // ══════════════════════════════════════════════
-function dispatch() {
+async function dispatch() {
   const q = document.getElementById('qInput').value.trim();
   if (!q) return;
   resetAll();
+  document.getElementById('llmBox').classList.remove('on');
 
   modes.orchestrator = 'thinking';
   setUI('orchestrator', 'think', '分析中...');
 
-  const entities = extractNamedEntities(q.toLowerCase());
-  const intent   = detectIntent(q);
+  const geminiKey = localStorage.getItem('gemini_key');
+  let entities, intent, agentKeys, thinkLines;
+
+  if (geminiKey) {
+    // Gemini 路由
+    const loadingLines = [
+      { text: `› 輸入：「${q.length > 40 ? q.slice(0,40)+'…' : q}」`, cls: 'lit' },
+      { text: `› 呼叫 ${{ gemini:'Gemini 2.0 Flash', claude:'Claude Haiku', openai:'GPT-4o mini' }[activeProvider]} 分析...`, cls: 'warn' },
+    ];
+    document.getElementById('thinkLines').textContent = '';
+    document.getElementById('thinkPanel').classList.add('on');
+    document.getElementById('resultPanel').classList.remove('on');
+    loadingLines.forEach((l, i) => {
+      const el = document.createElement('div');
+      el.className = 'think-line';
+      el.textContent = l.text;
+      document.getElementById('thinkLines').appendChild(el);
+      setTimeout(() => el.classList.add(l.cls), i * 160);
+    });
+
+    try {
+      const result = await callLLM(q);
+      agentKeys = result.agentKeys.filter(k => AGENTS[k]);
+      if (!agentKeys.length) agentKeys = ['data'];
+      intent    = result.intent || { key: 'query', label: '數據查詢' };
+      entities  = result.entities || { tickets: [], prs: [], tables: [] };
+
+      const extraLines = [
+        { text: `› Gemini：${result.thinkSummary}`, cls: 'accent' },
+        agentKeys.length > 1
+          ? { text: `› 跨域派發：${agentKeys.map(k=>AGENTS[k].name).join(' → ')}`, cls: 'ok' }
+          : { text: `› 派發 ${AGENTS[agentKeys[0]].fullName}`, cls: 'ok' },
+        { text: `› 生成任務簡報...`, cls: 'lit' },
+      ];
+      extraLines.forEach(l => {
+        const el = document.createElement('div');
+        el.className = 'think-line ' + l.cls;
+        el.textContent = l.text;
+        document.getElementById('thinkLines').appendChild(el);
+      });
+
+      // 覆寫 buildTaskInstruction 的輸出，使用 Gemini 的版本
+      window._geminiTaskInstruction = result.taskInstruction;
+
+      await new Promise(r => setTimeout(r, 600));
+      finishDispatch(q, agentKeys, intent, entities);
+    } catch (err) {
+      const el = document.createElement('div');
+      el.className = 'think-line warn';
+      el.textContent = `› Gemini 錯誤：${err.message}，fallback 至 rule-based`;
+      document.getElementById('thinkLines').appendChild(el);
+      await new Promise(r => setTimeout(r, 800));
+      fallbackDispatch(q);
+    }
+  } else {
+    // Rule-based fallback
+    entities  = extractNamedEntities(q.toLowerCase());
+    intent    = detectIntent(q);
+    agentKeys = detectAgents(q, entities);
+    thinkLines = buildThinkLines(q, intent, entities, agentKeys);
+    animateThinkLines(thinkLines, () => finishDispatch(q, agentKeys, intent, entities));
+  }
+}
+
+function fallbackDispatch(q) {
+  const entities  = extractNamedEntities(q.toLowerCase());
+  const intent    = detectIntent(q);
   const agentKeys = detectAgents(q, entities);
   const thinkLines = buildThinkLines(q, intent, entities, agentKeys);
+  animateThinkLines(thinkLines, () => finishDispatch(q, agentKeys, intent, entities));
+}
 
-  animateThinkLines(thinkLines, () => {
-    const isMulti = agentKeys.length > 1;
-    modes.orchestrator = 'done';
-    setUI('orchestrator', 'done', isMulti ? `→ ${agentKeys.length}個幕僚` : `→ ${AGENTS[agentKeys[0]].name}`);
+function finishDispatch(q, agentKeys, intent, entities) {
+  const isMulti = agentKeys.length > 1;
+  modes.orchestrator = 'done';
+  setUI('orchestrator', 'done', isMulti ? `→ ${agentKeys.length}個幕僚` : `→ ${AGENTS[agentKeys[0]].name}`);
 
-    agentKeys.forEach((key, i) => setTimeout(() => {
-      modes[key] = 'working';
-      setUI(key, 'work', '處理中');
-    }, i * 300));
+  agentKeys.forEach((key, i) => setTimeout(() => {
+    modes[key] = 'working';
+    setUI(key, 'work', '處理中');
+  }, i * 300));
 
-    setTimeout(() => {
-      agentKeys.forEach(key => { modes[key]='done'; setUI(key,'done','完成'); });
-      showResult(q, agentKeys, intent, entities);
-      setTimeout(resetAll, 4500);
-    }, 1800 + agentKeys.length * 300);
-  });
+  setTimeout(() => {
+    agentKeys.forEach(key => { modes[key]='done'; setUI(key,'done','完成'); });
+    showResult(q, agentKeys, intent, entities);
+    window._geminiTaskInstruction = null;
+    setTimeout(resetAll, 4500);
+  }, 1200 + agentKeys.length * 300);
 }
 
 function copyPrompt() {
