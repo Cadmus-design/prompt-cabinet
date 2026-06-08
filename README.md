@@ -4,13 +4,15 @@
 
 針對特定團隊的工作流程設計，每個幕僚只負責一個領域，問題進來自動路由給對的人。
 
+**線上版：** https://cadmus-design.github.io/prompt-cabinet/monitor/
+
 ---
 
 ## 概念
 
 不要讓 AI 當通才，要讓 AI 扮演專才。
 
-把你的背景知識寫進 `agents/*.md`，需要哪個幕僚就載入哪個 prompt。不需要 API key、不需要後端，Claude Code 讀檔即是載入 system prompt。
+把你的背景知識寫進 `agents/*.md`，需要哪個幕僚就載入哪個 prompt。Claude Code 讀檔即是載入 system prompt；瀏覽器版可接 Gemini / Claude / OpenAI API key 做語意路由。
 
 ```
 你的問題
@@ -44,18 +46,22 @@
 
 ## 使用方式
 
-### 方式 A：HTML Dispatch Center（視覺化）
+### 方式 A：Dispatch Center（線上 / 本地）
 
+線上直接開：https://cadmus-design.github.io/prompt-cabinet/monitor/
+
+本地開：
 ```bash
 open monitor/index.html
 ```
 
+**第一次使用：** 頁面頂部選擇 LLM provider（Gemini / Claude / OpenAI）→ 貼入 API key → 儲存。Key 存在瀏覽器 `localStorage`，不上傳任何伺服器。無 key 時自動 fallback 至 rule-based 路由。
+
 輸入問題 → 幕僚長自動分析 → 顯示思考流 → 生成任務簡報 + Prompt → 複製貼到 Claude Code
 
-Dispatch 引擎三層決策：
-1. **Named Entity 抽取** — 工單號（`DATAI-32`）、PR 號（`PR#41`）、table 名直接決定路由
-2. **Intent 偵測** — 判斷動作類型（查詢 / 撰寫 / 追蹤 / 驗證…）
-3. **加權計分** — entity 命中 ×2、intent 命中 ×1，跨域時序列派發
+Dispatch 引擎決策順序：
+1. **LLM 語意路由**（有 API key）— Gemini / Claude / GPT-4o mini 理解問題意圖，決定派發對象與任務指示
+2. **Rule-based fallback**（無 key）— Named Entity 抽取 → Intent 偵測 → 加權計分（entity ×2、intent ×1）
 
 生成的 Prompt 包含幕僚長任務簡報：
 
