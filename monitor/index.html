@@ -161,11 +161,19 @@
     <button class="provider-btn active" id="btn-gemini"    onclick="selectProvider('gemini')">Gemini</button>
     <button class="provider-btn"        id="btn-claude"    onclick="selectProvider('claude')">Claude</button>
     <button class="provider-btn"        id="btn-openai"    onclick="selectProvider('openai')">OpenAI</button>
+    <button class="provider-btn"        id="btn-nvidia"    onclick="selectProvider('nvidia')">NVIDIA</button>
   </div>
   <div class="apikey-row">
     <span class="apikey-label" id="apikeyLabel">Gemini Key</span>
     <input class="apikey-input" id="apikeyInput" type="password" placeholder="AIza..." autocomplete="off"/>
     <button class="apikey-save" onclick="saveKey()">儲存</button>
+  </div>
+  <div class="apikey-row" id="modelSelectRow" style="display: none; margin-top: 8px;">
+    <span class="apikey-label">NVIDIA 模型</span>
+    <select class="apikey-input" id="nvidiaModelSelect" style="background: #161b22; color: #8b949e; border: 1px solid #30363d; border-radius: 4px; padding: 5px 10px; font-family: inherit; font-size: 12px; outline: none; cursor: pointer; max-width: 300px;">
+      <option value="thm/glm-5-1">GLM 5.1 (智譜旗言 - 邏輯/代碼強)</option>
+      <option value="minimaxai/minimax-m3">MiniMax M3 (名之境 - 中文流暢)</option>
+    </select>
   </div>
   <div class="apikey-status off" id="apikeyStatus">未設定 — 使用 rule-based 路由</div>
 </div>
@@ -672,6 +680,7 @@ const PROVIDERS = {
   gemini: { label: 'Gemini Key',  placeholder: 'AIza...',      storageKey: 'gemini_key' },
   claude: { label: 'Claude Key',  placeholder: 'sk-ant-...',   storageKey: 'claude_key' },
   openai: { label: 'OpenAI Key',  placeholder: 'sk-...',       storageKey: 'openai_key' },
+  nvidia: { label: 'NVIDIA Key',  placeholder: 'nvapi-...',    storageKey: 'nvidia_key' },
 };
 let activeProvider = localStorage.getItem('active_provider') || 'gemini';
 
@@ -679,13 +688,25 @@ function selectProvider(p) {
   activeProvider = p;
   localStorage.setItem('active_provider', p);
   Object.keys(PROVIDERS).forEach(k => {
-    document.getElementById('btn-' + k).classList.toggle('active', k === p);
+    const btn = document.getElementById('btn-' + k);
+    if (btn) btn.classList.toggle('active', k === p);
   });
   const cfg = PROVIDERS[p];
   document.getElementById('apikeyLabel').textContent = cfg.label;
   const input = document.getElementById('apikeyInput');
   input.placeholder = cfg.placeholder;
   input.value = localStorage.getItem(cfg.storageKey) || '';
+  
+  // NVIDIA 模型選擇器顯示/隱藏與初始化
+  const modelRow = document.getElementById('modelSelectRow');
+  if (modelRow) {
+    modelRow.style.display = p === 'nvidia' ? 'flex' : 'none';
+  }
+  const modelSelect = document.getElementById('nvidiaModelSelect');
+  if (modelSelect) {
+    modelSelect.value = localStorage.getItem('nvidia_model') || 'thm/glm-5-1';
+  }
+  
   updateKeyStatus();
 }
 
@@ -697,13 +718,18 @@ function saveKey() {
 function updateKeyStatus() {
   const k = localStorage.getItem(PROVIDERS[activeProvider].storageKey);
   const el = document.getElementById('apikeyStatus');
-  const names = { gemini: 'Gemini 2.0 Flash', claude: 'Claude Haiku', openai: 'GPT-4o mini' };
+  const names = { gemini: 'Gemini 2.0 Flash', claude: 'Claude Haiku', openai: 'GPT-4o mini', nvidia: 'NVIDIA (NIM)' };
   if (k) { el.textContent = `${names[activeProvider]} 已啟用`; el.className = 'apikey-status ok'; }
   else   { el.textContent = '未設定 — 使用 rule-based 路由'; el.className = 'apikey-status off'; }
 }
 
 // 初始化
 selectProvider(activeProvider);
+
+// 監聽 NVIDIA 模型改變
+document.getElementById('nvidiaModelSelect').addEventListener('change', e => {
+  localStorage.setItem('nvidia_model', e.target.value);
+});
 
 // ══════════════════════════════════════════════
 //  LLM API（Gemini / Claude / OpenAI）
@@ -783,6 +809,19 @@ async function callLLM(q) {
     return parseJSON(data.choices?.[0]?.message?.content || '');
   }
 
+  if (provider === 'nvidia') {
+    const model = localStorage.getItem('nvidia_model') || 'thm/glm-5-1';
+    const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: model, temperature: 0.1, max_tokens: 512,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: userMsg }] })
+    });
+    if (!res.ok) throw new Error(`NVIDIA ${res.status}`);
+    const data = await res.json();
+    return parseJSON(data.choices?.[0]?.message?.content || '');
+  }
+
   throw new Error('未知 provider');
 }
 
@@ -798,14 +837,15 @@ async function dispatch() {
   modes.orchestrator = 'thinking';
   setUI('orchestrator', 'think', '分析中...');
 
-  const geminiKey = localStorage.getItem('gemini_key');
+  const activeKey = localStorage.getItem(PROVIDERS[activeProvider].storageKey);
   let entities, intent, agentKeys, thinkLines;
 
-  if (geminiKey) {
-    // Gemini 路由
+  if (activeKey) {
+    // LLM 路由
+    const providerNames = { gemini: 'Gemini 2.0 Flash', claude: 'Claude Haiku', openai: 'GPT-4o mini', nvidia: 'NVIDIA (NIM)' };
     const loadingLines = [
       { text: `› 輸入：「${q.length > 40 ? q.slice(0,40)+'…' : q}」`, cls: 'lit' },
-      { text: `› 呼叫 ${{ gemini:'Gemini 2.0 Flash', claude:'Claude Haiku', openai:'GPT-4o mini' }[activeProvider]} 分析...`, cls: 'warn' },
+      { text: `› 呼叫 ${providerNames[activeProvider]} 分析...`, cls: 'warn' },
     ];
     document.getElementById('thinkLines').textContent = '';
     document.getElementById('thinkPanel').classList.add('on');
@@ -826,7 +866,7 @@ async function dispatch() {
       entities  = result.entities || { tickets: [], prs: [], tables: [] };
 
       const extraLines = [
-        { text: `› Gemini：${result.thinkSummary}`, cls: 'accent' },
+        { text: `› ${providerNames[activeProvider]}：${result.thinkSummary}`, cls: 'accent' },
         agentKeys.length > 1
           ? { text: `› 跨域派發：${agentKeys.map(k=>AGENTS[k].name).join(' → ')}`, cls: 'ok' }
           : { text: `› 派發 ${AGENTS[agentKeys[0]].fullName}`, cls: 'ok' },
@@ -839,7 +879,7 @@ async function dispatch() {
         document.getElementById('thinkLines').appendChild(el);
       });
 
-      // 覆寫 buildTaskInstruction 的輸出，使用 Gemini 的版本
+      // 覆寫 buildTaskInstruction 的輸出，使用 LLM 的版本
       window._geminiTaskInstruction = result.taskInstruction;
 
       await new Promise(r => setTimeout(r, 600));
@@ -847,7 +887,7 @@ async function dispatch() {
     } catch (err) {
       const el = document.createElement('div');
       el.className = 'think-line warn';
-      el.textContent = `› Gemini 錯誤：${err.message}，fallback 至 rule-based`;
+      el.textContent = `› ${providerNames[activeProvider]} 錯誤：${err.message}，fallback 至 rule-based`;
       document.getElementById('thinkLines').appendChild(el);
       await new Promise(r => setTimeout(r, 800));
       fallbackDispatch(q);
