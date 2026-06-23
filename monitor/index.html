@@ -28,14 +28,48 @@
     .dot.done  { background: #58a6ff; }
     .dot-label { color: #8b949e; }
 
-    .dispatch-panel { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .dispatch-panel {
+      background: rgba(22, 27, 34, 0.75);
+      border: 1px solid rgba(48, 54, 61, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
     .dispatch-panel h2 { font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
     .input-row { display: flex; gap: 8px; }
-    .q-input { flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 5px; padding: 9px 12px; color: #e6edf3; font-family: inherit; font-size: 15px; outline: none; }
-    .q-input:focus { border-color: #58a6ff; }
+    .q-input {
+      flex: 1;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 9px 14px;
+      color: #e6edf3;
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .q-input:focus {
+      border-color: #58a6ff;
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    }
     .q-input::placeholder { color: #484f58; }
-    .go-btn { background: #58a6ff; color: #0d1117; border: none; border-radius: 5px; padding: 9px 18px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
-    .go-btn:hover { opacity: .85; }
+    .go-btn {
+      background: #58a6ff;
+      color: #0d1117;
+      border: none;
+      border-radius: 6px;
+      padding: 9px 18px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    .go-btn:hover { background: #79b8ff; }
     .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
     .chip { background: #0d1117; border: 1px solid #21262d; color: #8b949e; border-radius: 4px; padding: 3px 8px; font-size: 12px; cursor: pointer; transition: all .15s; }
     .chip:hover { border-color: #58a6ff; color: #58a6ff; }
@@ -43,7 +77,17 @@
     .chip.multi:hover { border-color: #a78bfa; color: #a78bfa; }
 
     /* ── Think Log ── */
-    .think-panel { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; display: none; }
+    .think-panel {
+      background: rgba(13, 17, 23, 0.85);
+      border: 1px solid rgba(48, 54, 61, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      display: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
     .think-panel.on { display: block; }
     .think-header { font-size: 11px; color: #8b5cf6; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
     .think-header::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #8b5cf6; animation: pulse .7s infinite; }
@@ -54,7 +98,16 @@
     .think-line.warn { color: #d29922; }
 
     /* ── Result Panel ── */
-    .result-panel { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 16px; display: none; }
+    .result-panel {
+      background: rgba(22, 27, 34, 0.75);
+      border: 1px solid rgba(48, 54, 61, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 8px;
+      padding: 16px;
+      display: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
     .result-panel.on { display: block; }
     .res-section-title { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
 
@@ -81,17 +134,26 @@
     .copy-text { font-size: 13px; color: #3fb950; line-height: 1.8; white-space: pre-wrap; }
 
     /* API key panel */
-    .apikey-panel { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 12px 14px; margin-bottom: 12px; }
+    .apikey-panel {
+      background: rgba(22, 27, 34, 0.75);
+      border: 1px solid rgba(48, 54, 61, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
     .apikey-providers { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
-    .provider-btn { background: #161b22; border: 1px solid #30363d; color: #484f58; border-radius: 4px; padding: 4px 12px; font-family: inherit; font-size: 12px; cursor: pointer; transition: all .15s; }
+    .provider-btn { background: #161b22; border: 1px solid #30363d; color: #484f58; border-radius: 4px; padding: 5px 12px; font-family: inherit; font-size: 12px; cursor: pointer; transition: all .15s; }
     .provider-btn:hover { border-color: #58a6ff; color: #8b949e; }
     .provider-btn.active { border-color: #58a6ff; color: #58a6ff; background: rgba(88,166,255,.08); }
     .apikey-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .apikey-label { font-size: 11px; color: #484f58; white-space: nowrap; min-width: 70px; }
-    .apikey-input { flex: 1; min-width: 200px; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 5px 10px; color: #8b949e; font-family: inherit; font-size: 12px; outline: none; }
+    .apikey-label { font-size: 11px; color: #8b949e; white-space: nowrap; min-width: 90px; }
+    .apikey-input { flex: 1; min-width: 200px; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 5px 10px; color: #8b949e; font-family: inherit; font-size: 12px; outline: none; transition: border-color 0.2s; }
     .apikey-input:focus { border-color: #58a6ff; color: #e6edf3; }
-    .apikey-save { background: transparent; border: 1px solid #30363d; color: #8b949e; border-radius: 4px; padding: 5px 10px; font-family: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
-    .apikey-save:hover { border-color: #3fb950; color: #3fb950; }
+    .apikey-save { background: transparent; border: 1px solid #30363d; color: #8b949e; border-radius: 4px; padding: 5px 10px; font-family: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+    .apikey-save:hover { border-color: #3fb950; color: #3fb950; background: rgba(63, 185, 80, 0.05); }
     .apikey-status { font-size: 11px; margin-top: 6px; }
     .apikey-status.ok  { color: #3fb950; }
     .apikey-status.off { color: #484f58; }
@@ -174,6 +236,11 @@
       <option value="thm/glm-5-1">GLM 5.1 (智譜旗言 - 邏輯/代碼強)</option>
       <option value="minimaxai/minimax-m3">MiniMax M3 (名之境 - 中文流暢)</option>
     </select>
+  </div>
+  <div class="apikey-row" style="margin-top: 8px; border-top: 1px dashed #21262d; padding-top: 8px;">
+    <span class="apikey-label">專案根路徑</span>
+    <input class="apikey-input" id="basePathInput" type="text" placeholder="~/Documents/dev/personal/prompt-cabinet" autocomplete="off"/>
+    <button class="apikey-save" id="btnSaveBasePath" onclick="saveBasePath()">儲存路徑</button>
   </div>
   <div class="apikey-status off" id="apikeyStatus">未設定 — 使用 rule-based 路由</div>
 </div>
@@ -503,8 +570,10 @@ function buildPrompt(agentKey, q, intent, entities, agentKeys) {
   // 針對意圖補充具體指示
   const taskInstruction = buildTaskInstruction(agentKey, q, intent, entities, isMulti, stepNum, stepTotal);
 
+  const basePath = localStorage.getItem('project_base_path') || '~/Documents/dev/personal/prompt-cabinet';
+  const cleanPath = basePath.replace(/\/$/, '');
   return [
-    `請讀取 ~/Documents/dev/personal/prompt-cabinet/agents/${a.file}.md`,
+    `請讀取 ${cleanPath}/agents/${a.file}.md`,
     ``,
     briefLines,
     ``,
@@ -671,6 +740,20 @@ function showResult(q, agentKeys, intent, entities) {
     : buildPrompt(agentKeys[0], q, intent, entities, agentKeys);
 
   document.getElementById('promptText').textContent = fullPrompt;
+
+  // 動態展示 LLM 生成的任務指示
+  const activeKey = localStorage.getItem(PROVIDERS[activeProvider].storageKey);
+  const llmBox = document.getElementById('llmBox');
+  const llmText = document.getElementById('llmText');
+  const providerNames = { gemini: 'Gemini 2.0 Flash', claude: 'Claude Haiku', openai: 'GPT-4o mini', nvidia: 'NVIDIA (NIM)' };
+  
+  if (activeKey && window._geminiTaskInstruction) {
+    llmBox.classList.add('on');
+    document.querySelector('.llm-box-header').textContent = `${providerNames[activeProvider]} 任務指示`;
+    llmText.textContent = window._geminiTaskInstruction;
+  } else {
+    llmBox.classList.remove('on');
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -712,7 +795,26 @@ function selectProvider(p) {
 
 function saveKey() {
   const k = document.getElementById('apikeyInput').value.trim();
-  if (k) { localStorage.setItem(PROVIDERS[activeProvider].storageKey, k); updateKeyStatus(); }
+  if (k) { 
+    localStorage.setItem(PROVIDERS[activeProvider].storageKey, k); 
+    updateKeyStatus(); 
+    const btn = document.querySelector('.apikey-save');
+    if (btn) {
+      const oldText = btn.textContent;
+      btn.textContent = '已儲存 ✓';
+      setTimeout(() => btn.textContent = oldText, 1500);
+    }
+  }
+}
+
+function saveBasePath() {
+  const p = document.getElementById('basePathInput').value.trim();
+  localStorage.setItem('project_base_path', p || '~/Documents/dev/personal/prompt-cabinet');
+  const btn = document.getElementById('btnSaveBasePath');
+  if (btn) {
+    btn.textContent = '已儲存 ✓';
+    setTimeout(() => btn.textContent = '儲存路徑', 1500);
+  }
 }
 
 function updateKeyStatus() {
@@ -725,6 +827,12 @@ function updateKeyStatus() {
 
 // 初始化
 selectProvider(activeProvider);
+
+// 初始化專案路徑
+const basePathInput = document.getElementById('basePathInput');
+if (basePathInput) {
+  basePathInput.value = localStorage.getItem('project_base_path') || '~/Documents/dev/personal/prompt-cabinet';
+}
 
 // 監聽 NVIDIA 模型改變
 document.getElementById('nvidiaModelSelect').addEventListener('change', e => {
