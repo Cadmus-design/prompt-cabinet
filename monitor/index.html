@@ -251,14 +251,7 @@
     <input class="q-input" id="qInput" type="text" placeholder="輸入問題，幕僚長自動判斷..." autocomplete="off"/>
     <button class="go-btn" onclick="dispatch()">Dispatch →</button>
   </div>
-  <div class="chips">
-    <span class="chip" onclick="setQ('AIGC 上個月 CTR 多少？')">AIGC CTR</span>
-    <span class="chip" onclick="setQ('幫我寫 aigc_daily_billing 的 metric description')">寫 L2 description</span>
-    <span class="chip" onclick="setQ('DATAI-32 現在狀態怎樣？')">DATAI-32 狀態</span>
-    <span class="chip" onclick="setQ('Finance 發票最近有什麼問題？')">Finance 發票</span>
-    <span class="chip multi" onclick="setQ('DATAI-32 改完後要怎麼驗證 AIGC subpage 數字正確？')">★ 跨幕僚：DATAI-32 驗證</span>
-    <span class="chip multi" onclick="setQ('subpage_count 的定義是什麼，Jira 上有沒有相關工單？')">★ 跨幕僚：定義 + 工單</span>
-  </div>
+  <div class="chips" id="chipsRow"></div>
 </div>
 
 <!-- 幕僚長思考流 -->
@@ -407,6 +400,7 @@ render();
 const AGENTS = {
   data: {
     file: 'data', name: '安娜', fullName: '資料幕僚（安娜）', tag: 'Data Agent', color: '#3b82f6',
+    desc: 'Databricks 數據查詢與分析——SQL、table、pipeline、流量指標、AIGC/SEO/GA4 數字，任何要跑查詢或解讀數據的問題',
     tool: 'mcp__databricks-prod__execute_sql_read_only',
     // entity 關鍵字：特定的系統名稱、table、指標
     entities: ['sql','databricks','table','aigc','bulldozer','subpage','view_logs','api_logs','silver','gold','pipeline','seo','aeo','ga4'],
@@ -415,36 +409,42 @@ const AGENTS = {
   },
   l2: {
     file: 'l2-description', name: '安海', fullName: 'L2描述幕僚（安海）', tag: 'L2 Desc', color: '#10b981',
+    desc: '撰寫與維護 metric 的 L2 description——定義、計算方式、業務含義、caveats，任何「指標是什麼意思／描述怎麼寫」的問題',
     tool: null,
     entities: ['description','caveat','schema','欄位','define','指標定義'],
     intents: ['寫','撰寫','定義','描述','怎麼算','業務含義','什麼意思'],
   },
   finance: {
     file: 'finance', name: '達利恩', fullName: 'Finance幕僚（達利恩）', tag: 'Finance', color: '#f59e0b',
+    desc: 'Finance 與 billing——發票、invoice、對帳、金額異常、成本相關問題',
     tool: 'mcp__postgres-billing__query',
     entities: ['finance','發票','invoice','billing','flora','cost'],
     intents: ['帳','金額','anomaly','對帳','核對'],
   },
   jira: {
     file: 'jira', name: 'JJ', fullName: 'Jira幕僚（JJ）', tag: 'Jira', color: '#ec4899',
+    desc: 'Jira 工單——狀態、進度、待辦、deploy checklist，任何提到 DATAI 工單或專案追蹤的問題',
     tool: 'mcp__claude_ai_Atlassian__getJiraIssue',
     entities: ['jira','datai','工單','ticket'],
     intents: ['狀態','進度','待辦','deploy後','merge後','checklist'],
   },
   github: {
     file: 'github', name: '窩賈', fullName: 'GitHub幕僚（窩賈）', tag: 'GitHub', color: '#38bdf8',
+    desc: 'GitHub——PR、code review、找程式碼、branch/commit/diff，任何要看 codebase 的問題',
     tool: 'mcp__github__github_list_pull_requests',
     entities: ['github','repo','branch','commit','diff','codebase','sql file'],
     intents: ['pr','pull request','程式碼','code','找函式','在哪個檔案','review'],
   },
   slack: {
     file: 'slack', name: '劉嘉玲', fullName: 'Slack幕僚（劉嘉玲）', tag: 'Slack', color: '#a78bfa',
+    desc: 'Slack 訊息搜尋——找討論、誰說過什麼、頻道歷史',
     tool: 'mcp__claude_ai_Slack__slack_search_public_and_private',
     entities: ['slack','頻道','channel'],
     intents: ['訊息','討論','誰說','有沒有說','聊','有沒有提到'],
   },
   google: {
     file: 'google', name: 'Yumi', fullName: 'Google幕僚（Yumi）', tag: 'Google', color: '#34d399',
+    desc: 'GA4 與 Search Console——impression、click、搜尋排名、索引、關鍵字成效',
     tool: 'mcp__google-analytics__run_report',
     entities: ['ga4','gsc','google analytics','search console','organic','keyword','關鍵字'],
     intents: ['impression','click','搜尋排名','索引','quick win','ga report'],
@@ -844,7 +844,7 @@ document.getElementById('nvidiaModelSelect').addEventListener('change', e => {
 // ══════════════════════════════════════════════
 function buildSystemPrompt() {
   const agentList = Object.entries(AGENTS).map(([k,a]) =>
-    `- ${k} (${a.name}): entities=[${a.entities.join(',')}] intents=[${a.intents.join(',')}]`
+    `- ${k} (${a.name}): ${a.desc}`
   ).join('\n');
   return `你是一個 AI 幕僚系統的路由器。根據用戶問題，決定派給哪個幕僚並生成任務指示。
 
@@ -939,6 +939,7 @@ async function callLLM(q) {
 async function dispatch() {
   const q = document.getElementById('qInput').value.trim();
   if (!q) return;
+  saveHistory(q);
   resetAll();
   document.getElementById('llmBox').classList.remove('on');
 
@@ -1046,6 +1047,27 @@ function copyPrompt() {
 
 function setQ(q) { document.getElementById('qInput').value = q; dispatch(); }
 document.getElementById('qInput').addEventListener('keydown', e => { if (e.key==='Enter') dispatch(); });
+
+// 查詢歷史 chips（取代 hardcoded 範例）
+function saveHistory(q) {
+  const h = JSON.parse(localStorage.getItem('query_history') || '[]').filter(x => x !== q);
+  h.unshift(q);
+  localStorage.setItem('query_history', JSON.stringify(h.slice(0, 5)));
+  renderChips();
+}
+function renderChips() {
+  const row = document.getElementById('chipsRow');
+  row.textContent = '';
+  JSON.parse(localStorage.getItem('query_history') || '[]').forEach(q => {
+    const el = document.createElement('span');
+    el.className = 'chip';
+    el.textContent = q.length > 24 ? q.slice(0, 24) + '…' : q;
+    el.title = q;
+    el.onclick = () => setQ(q);
+    row.appendChild(el);
+  });
+}
+renderChips();
 </script>
 </body>
 </html>
