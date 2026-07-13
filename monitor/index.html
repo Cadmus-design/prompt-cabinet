@@ -216,6 +216,11 @@
     <div class="agent-role">Google幕僚<br>GA4 / Search Console</div>
     <div class="agent-status"><div class="dot idle" id="dot-google"></div><span class="dot-label" id="lbl-google">待命</span></div>
   </div>
+  <div class="agent-card" id="card-design">
+    <div class="agent-name" style="color:#f472b6">達文西</div>
+    <div class="agent-role">設計幕僚<br>Logo / UI / 品牌視覺</div>
+    <div class="agent-status"><div class="dot idle" id="dot-design"></div><span class="dot-label" id="lbl-design">待命</span></div>
+  </div>
 </div>
 
 <div class="apikey-panel">
@@ -282,7 +287,7 @@
 //  Canvas / Sprite
 // ══════════════════════════════════════════════
 const BASE = 'https://raw.githubusercontent.com/pablodelucca/pixel-agents/main/webview-ui/public/assets/characters/';
-const SPRITE_IDX = { orchestrator:0, data:1, l2:2, finance:3, jira:4, github:5, slack:2, google:3 };
+const SPRITE_IDX = { orchestrator:0, data:1, l2:2, finance:3, jira:4, github:5, slack:2, google:3, design:5 };
 const spriteImgs = {};
 Object.entries(SPRITE_IDX).forEach(([id, idx]) => {
   const img = new Image(); img.crossOrigin = 'anonymous';
@@ -304,7 +309,10 @@ const CREW = [
   { id:'github',       name:'窩賈',   role:'GitHub',   color:'#38bdf8', cx:660 },
   { id:'slack',        name:'劉嘉玲', role:'Slack',    color:'#a78bfa', cx:780 },
   { id:'google',       name:'Yumi',   role:'Google',   color:'#34d399', cx:900 },
+  { id:'design',       name:'達文西', role:'Design',   color:'#f472b6', cx:0 },
 ];
+// cx 依人數均分，新增幕僚不用手排座位
+CREW.forEach((c, i) => c.cx = 60 + Math.round(i * 840 / (CREW.length - 1)));
 const modes = {}; CREW.forEach(c => modes[c.id] = 'idle');
 let tick = 0;
 
@@ -449,6 +457,20 @@ const AGENTS = {
     entities: ['ga4','gsc','google analytics','search console','organic','keyword','關鍵字'],
     intents: ['impression','click','搜尋排名','索引','quick win','ga report'],
   },
+  design: {
+    file: 'design', name: '達文西', fullName: '設計幕僚（達文西）', tag: 'Design', color: '#f472b6',
+    desc: '設計——logo、UI/UX、配色、字體、排版、品牌視覺、Figma，任何設計發想或美感判斷的問題',
+    tool: null,
+    entities: ['logo','figma','icon','banner','設計','配色','字體','排版','品牌','視覺','mockup','wireframe'],
+    intents: ['畫','風格','好看','美化','靈感','版面'],
+  },
+  orchestrator: {
+    file: 'orchestrator', name: '大谷', fullName: '幕僚長（大谷）', tag: 'General', color: '#8b5cf6',
+    desc: '幕僚長——問題不屬於任何專門幕僚時親自回答：一般諮詢、規劃、發想、跨領域整合',
+    tool: null,
+    entities: [],
+    intents: [],
+  },
 };
 
 // ══════════════════════════════════════════════
@@ -469,6 +491,7 @@ function detectIntent(q) {
   const map = [
     { key:'query',   label:'數據查詢',  words:['多少','幾個','查','有幾','統計','ctr','count','數字','趨勢','看一下'] },
     { key:'write',   label:'文件撰寫',  words:['寫','撰寫','幫我寫','怎麼寫','草稿'] },
+    { key:'design',  label:'設計創作',  words:['設計','logo','配色','風格','版面','美化'] },
     { key:'track',   label:'進度追蹤',  words:['狀態','進度','現在怎樣','完成了嗎','待辦','done了嗎'] },
     { key:'search',  label:'搜尋查找',  words:['找','搜','有沒有說','討論過','誰說','在哪個','哪個檔案'] },
     { key:'debug',   label:'問題排查',  words:['為什麼','bug','不對','錯誤','異常','怎麼修'] },
@@ -507,7 +530,7 @@ function detectAgents(q, entities) {
     return { key:k, score: eScore + iScore };
   }).filter(x => x.score > 0).sort((a,b) => b.score - a.score);
 
-  if (!scored.length) return ['data'];
+  if (!scored.length) return ['orchestrator'];
 
   // 跨域判斷：第二名 entity 命中 ≥ 1 → 同時派
   const top = scored[0];
@@ -623,6 +646,14 @@ function buildTaskInstruction(agentKey, q, intent, entities, isMulti, stepNum, s
 
   if (agentKey === 'google') {
     return `${q}\n請直接呼叫 GA4/GSC API 取得原始數據，並說明時間範圍與維度設定。`;
+  }
+
+  if (agentKey === 'design') {
+    return `${q}\n請給 2–3 個設計方向，各附一句理由與配色 hex；能用 SVG/CSS 實作的直接給 code。`;
+  }
+
+  if (agentKey === 'orchestrator') {
+    return `${q}\n沒有專門幕僚適用，請以幕僚長身分直接回答；若需深入，說明該再派哪位幕僚。`;
   }
 
   return q;
@@ -850,13 +881,12 @@ function buildSystemPrompt() {
 
 可用幕僚：
 ${agentList}
-- orchestrator (大谷): 幕僚長，不直接處理任務
 
 規則：
 1. 偵測到 DATAI-數字 → 一定包含 jira
 2. 偵測到 PR#數字 → 一定包含 github
 3. 跨域問題可回傳多個 key（最多2個）
-4. 沒有明確領域 → 回傳 data
+4. 沒有明確領域 → 回傳 orchestrator（幕僚長親自回答）
 
 回傳 JSON（只回 JSON，不加任何說明）：
 {
