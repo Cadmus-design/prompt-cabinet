@@ -596,7 +596,7 @@ function buildPrompt(agentKey, q, intent, entities, agentKeys) {
   const basePath = localStorage.getItem('project_base_path') || '~/Documents/dev/personal/prompt-cabinet';
   const cleanPath = basePath.replace(/\/$/, '');
   return [
-    `請讀取 ${cleanPath}/agents/${a.file}.md`,
+    `請讀取 ${cleanPath}/agents/${a.file}.md，以及 ${cleanPath}/knowledge/ 底下所有 .md`,
     ``,
     briefLines,
     ``,
