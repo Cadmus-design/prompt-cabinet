@@ -50,10 +50,13 @@
 
 線上直接開：https://cadmus-design.github.io/prompt-cabinet/monitor/
 
-本地開：
+本地開（需透過 HTTP server，直接用 `file://` 開圖片會被瀏覽器 CORS 擋住）：
+
 ```bash
-open monitor/index.html
+cd monitor && python3 -m http.server 8787
 ```
+
+然後開 http://localhost:8787
 
 **第一次使用：** 頁面頂部選擇 LLM provider（Gemini / Claude / OpenAI）→ 貼入 API key → 儲存。Key 存在瀏覽器 `localStorage`，不上傳任何伺服器。無 key 時自動 fallback 至 rule-based 路由。
 
@@ -106,7 +109,9 @@ prompt-cabinet/
 ├── knowledge/
 │   └── team-context.md     # 跨幕僚共用背景知識
 └── monitor/
-    └── index.html          # HTML Dispatch Center
+    ├── index.html          # HTML Dispatch Center
+    └── assets/
+        └── characters.png  # pixel art sprite sheet（本地快取）
 ```
 
 ---

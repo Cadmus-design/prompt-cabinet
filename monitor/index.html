@@ -286,14 +286,11 @@
 // ══════════════════════════════════════════════
 //  Canvas / Sprite
 // ══════════════════════════════════════════════
-const BASE = 'https://raw.githubusercontent.com/pablodelucca/pixel-agents/main/webview-ui/public/assets/characters/';
-const SPRITE_IDX = { orchestrator:0, data:1, l2:2, finance:3, jira:4, github:5, slack:2, google:3, design:5 };
-const spriteImgs = {};
-Object.entries(SPRITE_IDX).forEach(([id, idx]) => {
-  const img = new Image(); img.crossOrigin = 'anonymous';
-  img.onload = () => { spriteImgs[id] = img; };
-  img.src = BASE + 'char_' + idx + '.png';
-});
+// spritesheet: 1200×144, 16 characters × 75px wide
+const SPRITE_IDX = { orchestrator:0, data:1, l2:2, finance:3, jira:4, github:5, slack:6, google:7, design:8 };
+const SHEET_CW = 75, SHEET_CH = 144;
+const spriteSheet = new Image();
+spriteSheet.src = 'assets/characters.png';
 
 const canvas = document.getElementById('officeCanvas');
 const ctx = canvas.getContext('2d');
@@ -350,18 +347,20 @@ function drawDesk(cx, color, mode) {
   ctx.fillStyle = '#0a0e14'; ctx.fillRect(cx-3,FY-42,6,3);
 }
 function drawChar(cx, agentId, color, mode) {
-  const img = spriteImgs[agentId];
-  let fi = 1;
-  if (mode==='working')  fi = Math.floor(tick/18)%2===0 ? 3 : 4;
-  if (mode==='done')     fi = [0,1,2,1][Math.floor(tick/10)%4];
-  if (mode==='thinking') fi = Math.floor(tick/25)%2===0 ? 1 : 0;
+  // spritesheet: each char is SHEET_CW wide; use 2 walk frames for animation
+  const charIdx = SPRITE_IDX[agentId] ?? 0;
+  const sx = charIdx * SHEET_CW;
+  // each character tile is 75×144; draw whole tile
+  const FRAME_W = SHEET_CW, FRAME_H = SHEET_CH;
   let yo = 0;
   if (mode==='idle')     yo = Math.floor(tick/40)%2===0 ? 0 : -1;
   if (mode==='done')     yo = -(Math.abs(Math.sin(tick*0.13))*8|0);
   if (mode==='thinking') yo = Math.floor(tick/22)%2===0 ? 0 : -1;
-  const dx = cx-(FW*SC/2), dy = FY-FH*SC+yo;
-  if (img) {
-    ctx.drawImage(img, fi*FW, 0, FW, FH, dx, dy, FW*SC, FH*SC);
+  // scale to fit in ~48px height
+  const drawH = 72, drawW = Math.round(FRAME_W * drawH / FRAME_H);
+  const dx = cx - drawW/2, dy = FY - drawH + yo;
+  if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
+    ctx.drawImage(spriteSheet, sx, 0, FRAME_W, FRAME_H, dx, dy, drawW, drawH);
   } else {
     ctx.fillStyle='#f2c9a0'; ctx.fillRect(dx+14,dy+2,18,18);
     ctx.fillStyle=color;     ctx.fillRect(dx+10,dy+20,26,28);
