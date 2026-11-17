@@ -357,7 +357,8 @@ function drawChar(cx, agentId, color, mode) {
   if (mode==='done')     yo = -(Math.abs(Math.sin(tick*0.13))*8|0);
   if (mode==='thinking') yo = Math.floor(tick/22)%2===0 ? 0 : -1;
   const drawH = 72, drawW = Math.round(FRAME_W * drawH / SRC_H);
-  const dx = cx - drawW/2, dy = FY - drawH + yo;
+  // measured: char bottom lands at FY(158), desk surface at y=129; shift up 29px
+  const dx = cx - drawW/2, dy = FY - drawH - 29 + yo;
   if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
     ctx.drawImage(spriteSheet, sx, SRC_Y, FRAME_W, SRC_H, dx, dy, drawW, drawH);
   } else {
