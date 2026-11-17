@@ -286,9 +286,10 @@
 // ══════════════════════════════════════════════
 //  Canvas / Sprite
 // ══════════════════════════════════════════════
-// spritesheet: 1200×144, 16 characters × 75px wide
+// characters.png 1200×144：15 個角色、間距不均，以下為實測的每個角色 [x0,x1]，y 範圍 12..131
 const SPRITE_IDX = { orchestrator:0, data:1, l2:2, finance:3, jira:4, github:5, slack:6, google:7, design:8 };
-const SHEET_CW = 75, SHEET_CH = 144;
+const SPRITE_X = [[8,71],[88,151],[168,231],[252,307],[332,387],[412,467],[488,551],[572,627],[652,707],[728,791],[808,871],[892,947],[972,1027],[1052,1107],[1132,1187]];
+const SRC_Y = 12, SRC_H = 120, SPRITE_SCALE = 0.6;
 const spriteSheet = new Image();
 spriteSheet.src = 'assets/characters.png';
 
@@ -334,7 +335,7 @@ function drawDesk(cx, color, mode) {
   ctx.fillStyle = '#1e2530'; ctx.fillRect(cx-46,FY-32,92,3);
   ctx.fillStyle = '#0a0e14'; ctx.fillRect(cx-15,FY-80,30,38);
   ctx.fillStyle = color;
-  ctx.globalAlpha = mode==='working' ? 0.8 : mode==='thinking' ? 0.5 : 0.08;
+  ctx.globalAlpha = mode==='working' ? 0.8 : mode==='thinking' ? 0.5 : 0.22;
   ctx.fillRect(cx-12,FY-77,24,30); ctx.globalAlpha = 1;
   ctx.fillStyle = '#e6edf3';
   ctx.globalAlpha = mode==='working' ? 0.55 : 0.12;
@@ -347,19 +348,16 @@ function drawDesk(cx, color, mode) {
   ctx.fillStyle = '#0a0e14'; ctx.fillRect(cx-3,FY-42,6,3);
 }
 function drawChar(cx, agentId, color, mode) {
-  // spritesheet: each char is SHEET_CW wide; use 2 walk frames for animation
-  const charIdx = SPRITE_IDX[agentId] ?? 0;
-  const sx = charIdx * SHEET_CW;
-  // full tile 75×144; foot at y=131 (91%) across all tiles
-  // desk surface = FY-42; dy = deskSurface - drawH*0.91
+  const [x0, x1] = SPRITE_X[SPRITE_IDX[agentId] ?? 0];
+  const sw = x1 - x0 + 1;
   let yo = 0;
   if (mode==='idle')     yo = Math.floor(tick/40)%2===0 ? 0 : -1;
   if (mode==='done')     yo = -(Math.abs(Math.sin(tick*0.13))*8|0);
   if (mode==='thinking') yo = Math.floor(tick/22)%2===0 ? 0 : -1;
-  const drawH = 88, drawW = Math.round(75 * drawH / 144);
-  const dx = cx - drawW/2, dy = Math.round((FY-42) - drawH*0.91) + yo;
+  const drawH = SRC_H * SPRITE_SCALE, drawW = Math.round(sw * SPRITE_SCALE);
+  const dx = Math.round(cx - drawW/2), dy = (FY-42) - drawH + yo;
   if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
-    ctx.drawImage(spriteSheet, sx, 0, 75, 144, dx, dy, drawW, drawH);
+    ctx.drawImage(spriteSheet, x0, SRC_Y, sw, SRC_H, dx, dy, drawW, drawH);
   } else {
     ctx.fillStyle='#f2c9a0'; ctx.fillRect(dx+14,dy+2,18,18);
     ctx.fillStyle=color;     ctx.fillRect(dx+10,dy+20,26,28);
