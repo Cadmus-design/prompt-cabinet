@@ -350,17 +350,18 @@ function drawChar(cx, agentId, color, mode) {
   // spritesheet: each char is SHEET_CW wide; use 2 walk frames for animation
   const charIdx = SPRITE_IDX[agentId] ?? 0;
   const sx = charIdx * SHEET_CW;
-  // tile 75×144; character pixels are y=20~131 (measured), crop to body only
-  const FRAME_W = SHEET_CW, SRC_Y = 20, SRC_H = 112;
+  // tile 75×144; body pixels x=8~71 y=20~131 (measured); single pose, no frames
+  const SRC_X = 8, SRC_Y = 20, SRC_W = 64, SRC_H = 112;
   let yo = 0;
   if (mode==='idle')     yo = Math.floor(tick/40)%2===0 ? 0 : -1;
   if (mode==='done')     yo = -(Math.abs(Math.sin(tick*0.13))*8|0);
   if (mode==='thinking') yo = Math.floor(tick/22)%2===0 ? 0 : -1;
-  const drawH = 72, drawW = Math.round(FRAME_W * drawH / SRC_H);
-  // measured: char bottom lands at FY(158), desk surface at y=129; shift up 29px
-  const dx = cx - drawW/2, dy = FY - drawH - 29 + yo;
+  // display at 70px tall, proportional width ~40px — fits within 105px spacing
+  const drawH = 70, drawW = Math.round(SRC_W * drawH / SRC_H);
+  // desk surface at FY-29 (measured); place feet there
+  const dx = cx - drawW/2, dy = FY - 29 - drawH + yo;
   if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
-    ctx.drawImage(spriteSheet, sx, SRC_Y, FRAME_W, SRC_H, dx, dy, drawW, drawH);
+    ctx.drawImage(spriteSheet, sx + SRC_X, SRC_Y, SRC_W, SRC_H, dx, dy, drawW, drawH);
   } else {
     ctx.fillStyle='#f2c9a0'; ctx.fillRect(dx+14,dy+2,18,18);
     ctx.fillStyle=color;     ctx.fillRect(dx+10,dy+20,26,28);
